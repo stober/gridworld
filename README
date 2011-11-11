@@ -4,7 +4,7 @@ Author: Jeremy Stober
 Contact: stober@gmail.com
 Version: 0.01
 
-This package contains an implementation of discrete mdps known as
+This package contains implementations of discrete mdps known as
 gridworlds that are convenient for testing reinforcement learning
-algorithms. Some vizualization is provided, along with a few other
+algorithms. Some visualization is provided, along with a few other
 mdps drawn from the literature on reinforcement learning.

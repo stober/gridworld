@@ -156,10 +156,10 @@ class MDP( object ):
     def state(self):
         return self.current
 
-    def observe(self):
+    def observe(self, s):
         pass
 
-    def move(self, a):
+    def move(self, a, obs=False):
         self.previous = self.current
         transition_distribution = self.model[a,self.current]
 
@@ -172,7 +172,10 @@ class MDP( object ):
 
         self.reward =  self.rewards[a,self.previous,self.current]
 
-        return (self.previous, a, self.reward, self.current)
+        if obs:
+            return (self.observe(self.previous), a, self.reward, self.observe(self.current))
+        else:
+            return (self.previous, a, self.reward, self.current)
 
     def linear_policy(self, w,s):
         # note that phi should be overridden (or learned in some way)
@@ -332,11 +335,16 @@ class MDP( object ):
         return trace
 
     # these two methods are meant to explore where having episodic data makes a difference
-    def single_episode(self, nsteps):
+    def single_episode(self, nsteps, policy = None, obs = False):
         self.reset()
+        if policy is None:
+            policy = self.random_policy
         trace = []
         for i in range(nsteps):
-            trace.append(self.move(self.random_policy(self.current)))
+            if obs:
+                trace.append(self.move(policy(self.observe(self.current))))
+            else:
+                trace.append(self.move(policy(self.current)))
         return trace
 
     def episodic_trace(self, nepisodes, nsteps):
@@ -345,14 +353,14 @@ class MDP( object ):
             trace.extend(self.single_episode(nsteps))
         return trace
 
-    def trace(self, tlen = 1000, policy=None):
+    def trace(self, tlen = 1000, policy=None, obs = False):
         # generate a trace using whatever policy is currently implemented
 
         if policy is None: policy = self.random_policy
 
         trace = []
         for i in range(tlen):
-            trace.append(self.move(policy(self.current)))
+            trace.append(self.move(policy(self.current), obs=obs))
             if self.current in self.endstates:
                 self.reset()
 

@@ -321,36 +321,15 @@ class MDP( object ):
         self.action = -1
         self.reward = 0
 
-    def single_trace(self, state, policy=None):
-
-        self.current = state
+    def single_episode(self, policy = None, obs = False):
+        self.reset()
         if policy is None: policy = self.random_policy
-
         trace = []
         while not self.current in self.endstates:
-            action = policy(self.current)
-            self.move(action)
-            trace.append(action)
-
-        return trace
-
-    # these two methods are meant to explore where having episodic data makes a difference
-    def single_episode(self, nsteps, policy = None, obs = False):
-        self.reset()
-        if policy is None:
-            policy = self.random_policy
-        trace = []
-        for i in range(nsteps):
             if obs:
                 trace.append(self.move(policy(self.observe(self.current))))
             else:
                 trace.append(self.move(policy(self.current)))
-        return trace
-
-    def episodic_trace(self, nepisodes, nsteps):
-        trace = []
-        for i in range(nepisodes):
-            trace.extend(self.single_episode(nsteps))
         return trace
 
     def trace(self, tlen = 1000, policy=None, obs = False):

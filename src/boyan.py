@@ -25,7 +25,7 @@ class Boyan(MP):
                                        [0,1,0,0],[0.25,0.75,0,0], [0.5,0.5,0,0],[0.75,0.25,0,0],
                                        [1,0,0,0]], dtype=float)
         self.actionfeatures = np.array([[0,1],[1,0]], dtype = float)
-
+        self.endstates = [0]
         MP.__init__(self, nstates = 13)
 
     def terminal(self, state):

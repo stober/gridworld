@@ -321,15 +321,26 @@ class MDP( object ):
         self.action = -1
         self.reward = 0
 
+    def identity(self, arg):
+        return arg
+
     def single_episode(self, policy = None, obs = False):
         self.reset()
         if policy is None: policy = self.random_policy
+
+        if obs:
+            observe = self.observe
+        else:
+            observe = self.identity
+
         trace = []
+        # initialize the actions
+        next_action = policy(observe(self.current))
         while not self.current in self.endstates:
-            if obs:
-                trace.append(self.move(policy(self.observe(self.current))))
-            else:
-                trace.append(self.move(policy(self.current)))
+            pstate, paction, reward, state = self.move(next_action, obs=obs)
+            next_action = policy(observe(self.current)) # next state
+            trace.append((pstate, paction, reward, state, next_action))
+
         return trace
 
     def trace(self, tlen = 1000, policy=None, obs = False):
@@ -337,11 +348,21 @@ class MDP( object ):
 
         if policy is None: policy = self.random_policy
 
+        if obs:
+            observe = self.observe
+        else:
+            observe = self.identity
+
         trace = []
+        next_action = policy(observe(self.current))
         for i in range(tlen):
-            trace.append(self.move(policy(self.current), obs=obs))
+
+            pstate, paction, reward, state = self.move(next_action, obs=obs)
+            trace.append((pstate, paction, reward, state, next_action))
+
             if self.current in self.endstates:
                 self.reset()
+                next_action = policy(observe(self.current))
 
         return trace
 

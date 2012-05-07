@@ -10,7 +10,65 @@ import os, sys, getopt, pdb, string
 import random as pr
 import numpy as np
 import numpy.linalg as la
-from markovdp import MDP
+from markovdp import MDP,FastMDP
+
+class FastGridworld8( FastMDP ):
+
+    def __init__(self, nrows = 5, ncols = 5, goal=[0], walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]):
+        self.nrows = nrows
+        self.ncols = ncols
+
+        self.walls = walls
+        grid = [self.coords(i) for i in range(self.nrows * self.ncols)]
+        grid = [s for s in grid if not s in self.walls]
+        self.states = dict([(i,s) for (i,s) in enumerate(grid)])
+        self.rstates = dict([(s,i) for (i,s) in enumerate(grid)]) # reverse lookup by grid coords
+
+        self.nstates = len(self.states)
+        self.nactions = 8
+        self.goal = goal #(self.nstates - 1) # /2
+        self.endstates = [self.goal]
+
+        FastMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+
+
+    def is_state(self, s):
+        return s in self.rstates
+
+    def state_index(self, s):
+        return self.rstates[s]
+
+    def coords(self, s):
+        return (s / self.ncols, s % self.ncols)
+
+    def dcoords(self, a):
+        # turn action index into an action A st. CS + A = NS
+        actions = [np.array((-1,0)),np.array((-1,-1)),
+                   np.array((0,-1)),np.array((1,-1)),
+                   np.array((1,0)), np.array((1,1)),
+                   np.array((0,1)), np.array((-1,1))]
+
+        return actions[a]
+
+    def get_next_state(self, a, i):
+        """ Fast next state computation for deterministic models. """
+        
+        cs = self.states[i]
+        ac = self.dcoords(a)
+        ns = cs + ac
+        ns = tuple(ns)
+
+        if self.is_state(ns):
+            return self.state_index(ns)
+        else:
+            return i
+
+    def get_reward(self, i):
+        if i in self.goal:
+            return 1.0
+        else:
+            return 0.0
+
 
 class Gridworld8( MDP ):
     """
@@ -58,10 +116,9 @@ class Gridworld8( MDP ):
                    np.array((0,1)), np.array((-1,1))]
 
         return actions[a]
-
-
+    
+    # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self, a, i, j):
-        """ Default reward is the 'center' state. """
 
         if i == self.goal:
             return 1.0

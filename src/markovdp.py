@@ -366,6 +366,52 @@ class MDP( object ):
 
         return trace
 
+class FastMDP(MDP):
+    """
+    There is a useful subcase of MDPs with large state spaces and
+    deterministic actions which we may wish to model. In these cases
+    it does not make sense to compute the entire model in advance.
+    """
+
+    def __init__(self, nstates = 32, nactions = 4):
+        self.nstates = nstates
+        self.sindices = range(self.nstates)
+        self.nactions = nactions
+        self.actions = range(self.nactions)
+
+        # the tabular number of features (generic)
+        self.tab_nfeatures = self.nstates * self.nactions + 1
+
+        if not hasattr(self, 'startindices'):
+            self.startindices = range(self.nstates)
+
+        # possible end states that initiate resets
+        if not hasattr(self, 'endstates'):
+            self.endstates = []
+
+        self.model = np.zeros((nactions,nstates),dtype='int')
+        for a in self.actions:
+            for i in self.sindices:
+                self.model[a,i] = self.get_next_state(a,i)
+
+        self.rewards = np.zeros(nstates)
+        for i in self.sindices:
+            self.rewards[i] = self.get_reward(i)
+
+        self.reset()
+
+    def move(self, a, obs=False):
+        self.previous = self.current
+        
+        self.current = self.model[a,self.previous]
+        self.reward = self.rewards[self.current]
+
+        if obs:
+            return (self.observe(self.previous), a, self.reward, self.observe(self.current))
+        else:
+            return (self.previous, a, self.reward, self.current)
+
+
 class MP( MDP ):
     """
     Sort of strange for a Markov Process to inherit from a MDP, but

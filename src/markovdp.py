@@ -358,6 +358,7 @@ class MDP( object ):
         for i in range(tlen):
 
             pstate, paction, reward, state = self.move(next_action, obs=obs)
+            next_action = policy(observe(self.current))
             trace.append((pstate, paction, reward, state, next_action))
 
             if self.current in self.endstates:

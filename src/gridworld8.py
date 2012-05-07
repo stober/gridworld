@@ -27,7 +27,7 @@ class FastGridworld8( FastMDP ):
         self.nstates = len(self.states)
         self.nactions = 8
         self.goal = goal #(self.nstates - 1) # /2
-        self.endstates = [self.goal]
+        self.endstates = self.goal
 
         FastMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
 

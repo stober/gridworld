@@ -14,7 +14,7 @@ from markovdp import MDP,FastMDP
 
 class FastGridworld8( FastMDP ):
 
-    def __init__(self, nrows = 5, ncols = 5, goal=[0], walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]):
+    def __init__(self, nrows = 5, ncols = 5, goal=[0], walls=[]):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -50,9 +50,31 @@ class FastGridworld8( FastMDP ):
 
         return actions[a]
 
+    def neighbors(self, state):
+        result = []
+        for i in self.actions:
+            result.append(self.get_next_state(i,state))
+        return result
+
+    def distance(self, start, end):
+        """ Use euclidean distance here? """
+        return la.norm(np.array(self.states[start]) - np.array(self.states[end]))
+
+    def shortest_path(self, start, end):
+        from astar import astar
+        path = astar(self.neighbors, start, end, lambda x,y : 0.0, self.distance)
+        actions = [self.get_action(path[i],path[i+1]) for i in range(len(path) - 1)]
+        return path, actions
+
+    def get_action(self, i, j):
+        """ Get action that connects states i,j if available. """
+        for a in self.actions:
+            if j == self.get_next_state(a,i):
+                return a
+
     def get_next_state(self, a, i):
         """ Fast next state computation for deterministic models. """
-        
+
         cs = self.states[i]
         ac = self.dcoords(a)
         ns = cs + ac
@@ -116,7 +138,7 @@ class Gridworld8( MDP ):
                    np.array((0,1)), np.array((-1,1))]
 
         return actions[a]
-    
+
     # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self, a, i, j):
 
@@ -144,4 +166,6 @@ class Gridworld8( MDP ):
 
 if __name__ == '__main__':
 
-    gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
+    #gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
+    #nrows = 5, ncols = 5, goal=[0], walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]
+    pass

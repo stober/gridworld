@@ -20,6 +20,7 @@ class MDP( object ):
         self.sindices = range(self.nstates)
         self.nactions = nactions
         self.actions = range(self.nactions)
+        self.vcnts = np.zeros(self.nstates)
         self.gamma = 0.9
 
         # possible start states for reset problems
@@ -69,6 +70,13 @@ class MDP( object ):
         # "gridworld."  Actions are "left","up","right","down" and
         # result in non-zero transition probabilities for the
         # appropriate neighboring states in particular cases.
+
+    def reset_counts(self):
+        self.vcnts = np.zeros(self.nstates)
+
+    def set_state(self, state):
+        self.current = state
+        self.vcnts[self.current] += 1
 
     def initial_policy(self):
         return np.zeros(self.tab_nfeatures)
@@ -315,11 +323,16 @@ class MDP( object ):
 
         return policy
 
-    def reset(self):
-        self.current = pr.choice(self.startindices)
+    def reset(self, method = "random"):
+        if method == "random":
+            self.current = pr.choice(self.startindices)
+        else: # choose least visited state
+            self.current = np.argmin(self.vcnts)
+
         self.previous = -1
         self.action = -1
         self.reward = 0
+        self.vcnts[self.current] += 1
 
     def identity(self, arg):
         return arg
@@ -379,6 +392,7 @@ class FastMDP(MDP):
         self.sindices = range(self.nstates)
         self.nactions = nactions
         self.actions = range(self.nactions)
+        self.vcnts = np.zeros(self.nstates)
 
         # the tabular number of features (generic)
         self.tab_nfeatures = self.nstates * self.nactions + 1
@@ -403,9 +417,11 @@ class FastMDP(MDP):
 
     def move(self, a, obs=False):
         self.previous = self.current
-        
+
         self.current = self.model[a,self.previous]
         self.reward = self.rewards[self.current]
+
+        self.vcnts[self.current] += 1
 
         if obs:
             return (self.observe(self.previous), a, self.reward, self.observe(self.current))

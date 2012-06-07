@@ -10,7 +10,63 @@ import os, sys, getopt, pdb, string
 import random as pr
 import numpy as np
 import numpy.linalg as la
-from markovdp import MDP,FastMDP
+from markovdp import MDP,FastMDP,SparseMDP
+
+class SparseGridworld8( SparseMDP ):
+
+    def __init__(self, nrows = 5, ncols = 5, goal=0, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]):
+        self.nrows = nrows
+        self.ncols = ncols
+
+        self.walls = walls
+        grid = [self.coords(i) for i in range(self.nrows * self.ncols)]
+        grid = [s for s in grid if not s in self.walls]
+        self.states = dict([(i,s) for (i,s) in enumerate(grid)])
+        self.rstates = dict([(s,i) for (i,s) in enumerate(grid)]) # reverse lookup by grid coords
+
+        self.nstates = len(self.states)
+        self.nactions = 8
+        self.goal = goal #(self.nstates - 1) # /2
+        self.endstates = [self.goal]
+
+        SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+
+    def is_state(self, s):
+        return s in self.rstates
+
+    def state_index(self, s):
+        return self.rstates[s]
+
+    def coords(self, s):
+        return (s / self.ncols, s % self.ncols)
+
+    def dcoords(self, a):
+        # turn action index into an action A st. CS + A = NS
+        actions = [np.array((-1,0)),np.array((-1,-1)),
+                   np.array((0,-1)),np.array((1,-1)),
+                   np.array((1,0)), np.array((1,1)),
+                   np.array((0,1)), np.array((-1,1))]
+
+        return actions[a]
+
+    # initialize_* methods create a complete model -- inefficient
+    def initialize_rewards(self):
+
+        r = np.zeros(self.nstates)
+        r[self.goal] = 1.0
+        return r
+
+    def initialize_model(self, a, i):
+
+        cs = self.states[i]
+        ac = self.dcoords(a)
+        ns = cs + ac
+        ns = tuple(ns)
+
+        if self.is_state(ns):
+            return [(self.state_index(ns),1.0)]
+        else:
+            return [(i,1.0)]
 
 class FastGridworld8( FastMDP ):
 
@@ -166,6 +222,7 @@ class Gridworld8( MDP ):
 
 if __name__ == '__main__':
 
-    #gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
-    #nrows = 5, ncols = 5, goal=[0], walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]
-    pass
+    gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
+    gws = SparseGridworld8(nrows = 32, ncols = 64)
+    #bad = Gridworld8(nrows = 32, ncols=64) # will blowup memory
+    t = gws.trace(1000)

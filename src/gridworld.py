@@ -212,5 +212,6 @@ if __name__ == '__main__':
     print np.histogram(states, bins=range(gw.nstates))
     print np.histogram(rewards, bins = [0,1,2])
 
-    gws = SparseGridworld()
+    gws = SparseGridworld(nrows = 32, ncols = 64) # without a sparse rep. this would blowup
     t = gws.trace(10000)
+

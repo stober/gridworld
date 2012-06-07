@@ -415,6 +415,73 @@ class FastMDP(MDP):
 
         self.reset()
 
+    @staticmethod
+    def load(filename):
+        import re
+        fp = open(filename)
+
+        nactions = -1
+        nstates = -1
+        endstates = []
+        model = None
+        rewards = None
+
+        state = 'nostate'
+
+        for line in fp.readlines():
+            if state == 'nostate':
+                if re.match(r'nactions', line):
+                    _,nactions = line.split()
+                    nactions = int(nactions)
+                elif re.match(r'nstates', line):
+                    _,nstates = line.split()
+                    nstates = int(nstates)
+                elif re.match(r'endstates', line):
+                    endstates = [int(i) for i in line.split()[1:]]
+                elif re.match(r'rewards', line):
+                    state = 'rewards'
+                    rewards = np.zeros(nstates)
+                elif re.match(r'model', line):
+                    state = 'model'
+                    model = np.zeros((nactions,nstates))
+            elif state == 'model':
+                s,a,n = line.split()
+                model[int(a),int(s)] = int(n)
+            elif state == 'rewards':
+                s,r = line.split()
+                rewards[int(s)] = r
+            
+        instance = FastMDP.__init__(nstates = nstates, nactions = nactions)
+        instance.endstates = endstates
+        instance.model = model
+        instance.rewards = rewards
+
+        return instance
+
+    def save(self, filename):
+        """
+        Save MDP in custom format for easy inspection.
+        """
+
+        fp = open(filename, 'w')
+        fp.write('FastMDP\n\n')
+        fp.write("nactions {0}\n".format(self.nactions))
+        fp.write("nstates {0}\n\n".format(self.nstates))
+
+        fp.write("endstates ")
+        for i in self.endstates:
+            fp.write("{0} ".format(i))
+
+        fp.write("\n\nrewards\n")
+        for i in self.sindices:
+            fp.write("{0} {1}\n".format(i,self.rewards[i]))
+
+        fp.write("\nmodel\n")
+        for i in self.sindices:
+            for a in self.actions:
+                fp.write("{0} {1} {2}\n".format(i, a, self.model[a,i]))
+        
+
     def move(self, a, obs=False):
         self.previous = self.current
 

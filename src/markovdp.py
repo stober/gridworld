@@ -13,6 +13,9 @@ import random as pr
 import numpy as np
 import numpy.random as npr
 
+
+
+
 class MDP( object ):
 
     def __init__(self, nstates = 32, nactions = 4):
@@ -21,7 +24,6 @@ class MDP( object ):
         self.nactions = nactions
         self.actions = range(self.nactions)
         self.vcnts = np.zeros(self.nstates)
-        self.gamma = 0.9
 
         # possible start states for reset problems
         if not hasattr(self, 'startindices'):
@@ -450,7 +452,7 @@ class FastMDP(MDP):
             elif state == 'rewards':
                 s,r = line.split()
                 rewards[int(s)] = r
-            
+
         instance = FastMDP.__init__(nstates = nstates, nactions = nactions)
         instance.endstates = endstates
         instance.model = model
@@ -480,7 +482,7 @@ class FastMDP(MDP):
         for i in self.sindices:
             for a in self.actions:
                 fp.write("{0} {1} {2}\n".format(i, a, self.model[a,i]))
-        
+
 
     def move(self, a, obs=False):
         self.previous = self.current
@@ -489,6 +491,61 @@ class FastMDP(MDP):
         self.reward = self.rewards[self.current]
 
         self.vcnts[self.current] += 1
+
+        if obs:
+            return (self.observe(self.previous), a, self.reward, self.observe(self.current))
+        else:
+            return (self.previous, a, self.reward, self.current)
+
+
+class SparseMDP( MDP ):
+    """
+    Reward and model transition distributions are often sparse
+    (esp. for big problems) and so it makes sense to use sparse
+    matrices instead of dense matrices for these.
+    """
+
+    def __init__(self, nstates = 32, nactions = 4):
+        self.nstates = nstates
+        self.sindices = range(self.nstates)
+        self.nactions = nactions
+        self.actions = range(self.nactions)
+        self.vcnts = np.zeros(self.nstates)
+
+        # possible start states for reset problems
+        if not hasattr(self, 'startindices'):
+            self.startindices = range(self.nstates)
+
+        # possible end states that initiate resets
+        if not hasattr(self, 'endstates'):
+            self.endstates = []
+
+        self.model = {}
+        for a in self.actions:
+            for i in self.sindices:
+                self.model[a,i] = self.initialize_model(a,i)
+
+        self.rewards = self.initialize_rewards()
+
+        self.reset()
+
+        # the tabular number of features (generic)
+        self.tab_nfeatures = self.nstates * self.nactions + 1
+
+    def move(self, a, obs=False):
+        self.previous = self.current
+        distribution = self.model[a,self.current] # list of (state, prob) pairs
+        states = [x[0] for x in distribution]
+        probs = [x[1] for x in distribution]
+
+        assert np.sum(probs) == 1.0, "a: %d, s: %d, p: %f" % (a, self.current, np.sum(transition_distribution))
+        choice = npr.multinomial(1,probs)
+        nonzero = np.nonzero(choice)[0]
+        assert len(nonzero) == 1
+
+        self.current = states[nonzero[0]]
+
+        self.reward =  self.rewards[self.current]
 
         if obs:
             return (self.observe(self.previous), a, self.reward, self.observe(self.current))

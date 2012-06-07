@@ -9,8 +9,77 @@ Description: A class for building gridworlds.
 import os, sys, getopt, pdb, string
 import random as pr
 import numpy as np
-from markovdp import MDP
+from markovdp import MDP, SparseMDP
 import scipy.cluster.vq as vq
+
+class SparseGridworld( SparseMDP ):
+    def __init__(self, nrows = 8, ncols = 8):
+        self.nrows = nrows
+        self.ncols = ncols
+        self.nstates = nrows * ncols
+        self.nactions = 4
+
+        self.left_edge = []
+        self.right_edge = []
+        self.top_edge = []
+        self.bottom_edge = []
+        self.gamma = 0.9
+
+        for x in range(self.nstates):
+
+            # note that edges are not disjoint, so we cannot use elif
+
+            if x % self.ncols == 0:
+                self.left_edge.append(x)
+
+            if 0 <= x < self.ncols:
+                self.top_edge.append(x)
+
+            if x % self.ncols == self.ncols - 1:
+                self.right_edge.append(x)
+
+            if (self.nrows - 1) * self.ncols <= x <= self.nstates:
+                self.bottom_edge.append(x)
+
+        SparseMDP.__init__(self, nstates = self.nrows * self.ncols, nactions = 4)
+
+
+    def coords(self, s):
+        return s / self.ncols, s % self.ncols
+
+    def initialize_rewards(self):
+        """ Default reward is the final state. """
+
+        r = np.zeros(self.nstates)
+        r[-1] = 1.0
+        return r
+
+    def initialize_model(self, a, i):
+        """
+        Simple gridworlds assume four actions -- one for each cardinal direction.
+        """
+
+        if a == 0:
+            if i in self.left_edge:
+                return [(i,1.0)]
+            else:
+                return [(i-1, 1.0)]
+        elif a == 1:
+            if i in self.top_edge:
+                return [(i,1.0)]
+            else:
+                return [(i-self.ncols,1.0)]
+        elif a == 2:
+            if i in self.right_edge:
+                return [(i,1.0)]
+            else:
+                return [(i+1,1.0)]
+        elif a == 3:
+            if i in self.bottom_edge:
+                return [(i,1.0)]
+            else:
+                return [(i + self.ncols,1.0)]
+
 
 class Gridworld( MDP ):
     """
@@ -143,9 +212,5 @@ if __name__ == '__main__':
     print np.histogram(states, bins=range(gw.nstates))
     print np.histogram(rewards, bins = [0,1,2])
 
-
-
-
-
-
-
+    gws = SparseGridworld()
+    t = gws.trace(10000)

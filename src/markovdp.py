@@ -24,6 +24,7 @@ class MDP( object ):
         self.nactions = nactions
         self.actions = range(self.nactions)
         self.vcnts = np.zeros(self.nstates)
+        self.gamma = 0.9
 
         # possible start states for reset problems
         if not hasattr(self, 'startindices'):
@@ -395,6 +396,7 @@ class FastMDP(MDP):
         self.nactions = nactions
         self.actions = range(self.nactions)
         self.vcnts = np.zeros(self.nstates)
+        self.gamma = 0.9
 
         # the tabular number of features (generic)
         self.tab_nfeatures = self.nstates * self.nactions + 1
@@ -511,7 +513,8 @@ class SparseMDP( MDP ):
         self.nactions = nactions
         self.actions = range(self.nactions)
         self.vcnts = np.zeros(self.nstates)
-
+        self.gamma = 0.9
+        
         # possible start states for reset problems
         if not hasattr(self, 'startindices'):
             self.startindices = range(self.nstates)

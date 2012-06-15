@@ -14,7 +14,7 @@ from markovdp import MDP,FastMDP,SparseMDP
 
 class SparseGridworld8( SparseMDP ):
 
-    def __init__(self, nrows = 5, ncols = 5, goal=0, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]):
+    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0], nrbf = 15):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -26,10 +26,11 @@ class SparseGridworld8( SparseMDP ):
 
         self.nstates = len(self.states)
         self.nactions = 8
-        self.goal = goal #(self.nstates - 1) # /2
-        self.endstates = [self.goal]
+        self.endstates = endstates
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+
+        self.rbf_loc = [np.array(self.coords(i)) for i in pr.sample(self.sindices, nrbf)]
 
     def is_state(self, s):
         return s in self.rstates
@@ -49,11 +50,29 @@ class SparseGridworld8( SparseMDP ):
 
         return actions[a]
 
+    def phi(self, s, a):
+        r = np.zeros(len(self.rbf_loc) * self.nactions + 1)
+
+        # compute the rbf functions
+        j = np.array(self.coords(s))
+        
+        for i,c in enumerate(self.rbf_loc):
+            #print la.norm(c - j) ** 2, -.0001 *la.norm(c - j,ord=np.inf) ** 2, np.exp(-.001 *la.norm(c - j,ord=np.inf) ** 2)
+            r[a * len(self.rbf_loc) + i] = np.exp(-.001 *la.norm(c - j, ord=np.inf) ** 2)
+
+        r[-1] = 1.0
+        return r
+
+
+    def nfeatures(self):
+        return len(self.rbf_loc) * self.nactions + 1
+
     # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self):
 
         r = np.zeros(self.nstates)
-        r[self.goal] = 1.0
+        for es in self.endstates:
+            r[es] = 1.0
         return r
 
     def initialize_model(self, a, i):
@@ -70,7 +89,7 @@ class SparseGridworld8( SparseMDP ):
 
 class FastGridworld8( FastMDP ):
 
-    def __init__(self, nrows = 5, ncols = 5, goal=[0], walls=[]):
+    def __init__(self, nrows = 5, ncols = 5, endstates=[0], walls=[]):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -82,8 +101,7 @@ class FastGridworld8( FastMDP ):
 
         self.nstates = len(self.states)
         self.nactions = 8
-        self.goal = goal #(self.nstates - 1) # /2
-        self.endstates = self.goal
+        self.endstates = endstates
 
         FastMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
 
@@ -142,7 +160,7 @@ class FastGridworld8( FastMDP ):
             return i
 
     def get_reward(self, i):
-        if i in self.goal:
+        if i in self.endstates:
             return 1.0
         else:
             return 0.0

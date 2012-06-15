@@ -14,7 +14,8 @@ import pygame.locals as pgl
 
 import numpy as np
 import random as pr
-from gridworld8 import Gridworld8 as Gridworld
+#from gridworld8 import Gridworld8 as Gridworld
+from gridworld8 import SparseGridworld8 as Gridworld
 
 class GridworldGui( Gridworld ):
 
@@ -22,9 +23,9 @@ class GridworldGui( Gridworld ):
         # initialize the base gridworld class (no gui)
         Gridworld.__init__(self, *args, **kwargs)
 
-        nrows = 5
-        ncols = 5
-        size = 32
+        nrows = self.nrows
+        ncols = self.ncols
+        size = 16
         # compute the appropriate height and width (with room for cell borders)
         self.height = nrows * size + nrows + 1
         self.width = ncols * size + ncols + 1
@@ -80,7 +81,9 @@ class GridworldGui( Gridworld ):
         # observe the current best policy?
 
         # Note: template alread in "graphics" coordinates
-        template = np.array([(-8,0),(0,0),(8,0),(0,8),(8,0),(0,-8)])
+        template = np.array([(-1,0),(0,0),(1,0),(0,1),(1,0),(0,-1)])
+        template = self.size / 3 * template # scale template
+
         x,y = self.state2coord(state, center = True)
 
         #         0 : left
@@ -131,12 +134,30 @@ class GridworldGui( Gridworld ):
             template = np.dot(template, rot90)
             template = np.dot(template, rot45)
 
+
+
         arrowpoints = [(y + z[0],x + z[1]) for z in template]
-        pygame.draw.lines(self.surface,(0,255,0),0, arrowpoints, 1)
+        pygame.draw.lines(self.surface,(55,55,55),0, arrowpoints, 1)
 
     def save(self, filename):
         pygame.image.save(self.surface, filename)
 
+    def test_drawactions(self):
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pgl.QUIT:
+                    sys.exit()
+                elif event.type == pgl.KEYDOWN and event.key == pgl.K_ESCAPE:
+                    sys.exit()
+
+
+            for s in range(self.nstates):
+                a = 1
+                self.drawarrow(s,a)
+
+            self.screen.blit(self.surface, (0,0))
+            pygame.display.flip()
 
     def callback(self, *args, **kwargs):
         iter, current = args[0], args[1]
@@ -146,7 +167,7 @@ class GridworldGui( Gridworld ):
         for s in range(self.nstates):
             a = self.linear_policy(current,s)
             self.drawarrow(s,a)
-            self.drawvalues(s,current)
+            #self.drawvalues(s,current)
 
 
         self.screen.blit(self.surface, (0,0))
@@ -178,8 +199,8 @@ class GridworldGui( Gridworld ):
             if hasattr(self, 'lake'):
                 if s in self.lake:
                     pygame.draw.rect(self.surface,(0,0,255), coords)
-            if hasattr(self, 'goal'):
-                if s == self.goal:
+            if hasattr(self, 'endstates'):
+                if s in self.endstates:
                     pygame.draw.rect(self.surface,(0,255,0), coords)
 
     def ml_circle(self,x,y):
@@ -272,6 +293,8 @@ class GridworldGui( Gridworld ):
 
 if __name__ == '__main__':
 
-    gw = GridworldGui()
+
+    gw = GridworldGui(ncols = 32, nrows = 64, walls = [], endstates = [])
     #gw.save("gridworld.png")
-    t = gw.trace(1000)
+    #t = gw.trace(1000)
+    gw.test_drawactions()

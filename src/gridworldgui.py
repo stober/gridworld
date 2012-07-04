@@ -44,6 +44,17 @@ class GridworldGui( Gridworld ):
 
         self.updategui = True # switch to stop updating gui if you want to collect a trace quickly
 
+    def draw_state_labels(self):
+        
+        font = pygame.font.SysFont("FreeSans", 10)
+        for k,v in self.states.items():
+            x,y = self.indx2coord(v[0],v[1],False)
+            txt = font.render("%d" % k, True, (0,0,0))
+            self.surface.blit(txt, (y,x))
+
+        self.screen.blit(self.surface, (0,0))
+        pygame.display.flip()
+
     def state2coord(self, state, center = False):
         # state is a number between 0 and nstates
 

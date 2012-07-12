@@ -81,7 +81,8 @@ class MDP( object ):
         # compute values over states
         values = np.zeros(self.nstates)
         rtol = 1e-4
-        
+
+        # compute the value function
         condition = True
         i = 0
         while condition:
@@ -100,7 +101,16 @@ class MDP( object ):
             if delta < rtol:
                 break
 
-        return values
+        # compute the optimal policy
+        policy = np.zeros(self.nstates) # record the best action for each state
+        for s in self.sindices:
+            sums = np.zeros(self.nactions)
+            for a in self.actions:
+                for t in self.sindices:
+                    sums[a] += self.model[a,s,t] * (self.rewards[a,s,t] + self.gamma * values[t])
+            policy[s] = np.argmax(sums)
+
+        return values,policy
 
     def reset_counts(self):
         self.vcnts = np.zeros(self.nstates)

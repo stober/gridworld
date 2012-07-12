@@ -255,6 +255,12 @@ class GridworldGui( Gridworld ):
         pygame.draw.circle(self.surface, (255,0,0), (y,x), self.size / 2)
 
 
+    def follow(self, s, policy):
+        self.current = s
+        while not self.current  in self.endstates:
+            self.move(policy(s))
+            time.sleep(0.5)
+
     def move(self, a, obs = False):
 
         (previous, a, reward, current) = Gridworld.move(self, a)

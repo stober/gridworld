@@ -178,7 +178,7 @@ class Gridworld8( MDP ):
     models. See for example the way the boundaries are delt with.
     """
 
-    def __init__(self, nrows = 5, ncols = 5, goal=0, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]):
+    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0]):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -190,8 +190,7 @@ class Gridworld8( MDP ):
 
         self.nstates = len(self.states)
         self.nactions = 8
-        self.goal = goal #(self.nstates - 1) # /2
-        self.endstates = [self.goal]
+        self.endstates = endstates
 
         MDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
 
@@ -216,7 +215,7 @@ class Gridworld8( MDP ):
     # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self, a, i, j):
 
-        if i == self.goal:
+        if j in self.endstates:
             return 1.0
         else:
             return 0.0

@@ -14,8 +14,8 @@ import pygame.locals as pgl
 
 import numpy as np
 import random as pr
-#from gridworld8 import Gridworld8 as Gridworld
-from gridworld8 import SparseGridworld8 as Gridworld
+from gridworld8 import Gridworld8 as Gridworld
+#from gridworld8 import SparseGridworld8 as Gridworld
 
 class GridworldGui( Gridworld ):
 
@@ -74,7 +74,23 @@ class GridworldGui( Gridworld ):
             pygame.display.flip()
 
 
-    def drawvalues(self, state, w):
+    def draw_values(self, vals):
+        """
+        vals: a dict with state labels as the key
+        """
+        font = pygame.font.SysFont("FreeSans", 10)
+
+        for k,v in self.states.items():
+            x,y = self.indx2coord(v[0],v[1],False)
+            v = vals[k]
+            txt = font.render("%.1f" % v, True, (0,0,0))
+            self.surface.blit(txt, (y,x))
+
+        self.screen.blit(self.surface, (0,0))
+        pygame.display.flip()
+
+
+    def draw_linear_values(self, state, w):
 
         # write the value for each state for debugging purposes
 
@@ -88,7 +104,7 @@ class GridworldGui( Gridworld ):
 
         self.surface.blit(txt, (y,x))
 
-    def drawarrow(self, state, action):
+    def draw_arrow(self, state, action):
         # observe the current best policy?
 
         # Note: template alread in "graphics" coordinates
@@ -165,10 +181,15 @@ class GridworldGui( Gridworld ):
 
             for s in range(self.nstates):
                 a = 1
-                self.drawarrow(s,a)
+                self.draw_arrow(s,a)
 
             self.screen.blit(self.surface, (0,0))
             pygame.display.flip()
+
+    def redraw(self):
+        self.screen.blit(self.surface, (0,0))
+        pygame.display.flip()
+    
 
     def callback(self, *args, **kwargs):
         iter, current = args[0], args[1]
@@ -177,7 +198,7 @@ class GridworldGui( Gridworld ):
 
         for s in range(self.nstates):
             a = self.linear_policy(current,s)
-            self.drawarrow(s,a)
+            self.draw_arrow(s,a)
             #self.drawvalues(s,current)
 
 

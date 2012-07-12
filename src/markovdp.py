@@ -74,6 +74,34 @@ class MDP( object ):
         # result in non-zero transition probabilities for the
         # appropriate neighboring states in particular cases.
 
+    def value_iteration(self):
+        """
+        The optimal value function (and optimal policy) can be computed from the model directly using dynamic programming.
+        """
+        # compute values over states
+        values = np.zeros(self.nstates)
+        rtol = 1e-4
+        
+        condition = True
+        i = 0
+        while condition:
+            delta = 0
+            for s in self.sindices:
+                v = values[s]
+                sums = np.zeros(self.nactions)
+                for a in self.actions:
+                    for t in self.sindices:
+                        sums[a] += self.model[a,s,t] * (self.rewards[a,s,t] + self.gamma * values[t])
+                
+                values[s] = np.max(sums)
+                delta = max(delta, abs(v - values[s]))
+            print i,delta
+            i += 1
+            if delta < rtol:
+                break
+
+        return values
+
     def reset_counts(self):
         self.vcnts = np.zeros(self.nstates)
 
@@ -84,7 +112,7 @@ class MDP( object ):
     def initial_policy(self):
         return np.zeros(self.tab_nfeatures)
 
-    def initialize_rewards(self, a, i, j):
+    def initialize_reward(self, a, i, j):
         if j == 31:
             return 1.0
         else:
@@ -163,6 +191,12 @@ class MDP( object ):
 
             else:
                 return 0.0
+
+    def failure(self):
+        if self.current in self.endstates:
+            return True
+        else:
+            return False
 
     def state(self):
         return self.current

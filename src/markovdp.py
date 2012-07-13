@@ -102,7 +102,7 @@ class MDP( object ):
                 break
 
         # compute the optimal policy
-        policy = np.zeros(self.nstates) # record the best action for each state
+        policy = np.zeros(self.nstates, dtype=int) # record the best action for each state
         for s in self.sindices:
             sums = np.zeros(self.nactions)
             for a in self.actions:

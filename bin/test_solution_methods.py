@@ -10,6 +10,7 @@ from gridworld.gridworldgui import GridworldGui
 from lspi import LSPI
 import numpy as np
 from td import TDQ,TD,Sarsa
+import time
 
 endstates = [40]
 gw = GridworldGui(nrows=9,ncols=9,endstates=endstates, walls=[])
@@ -27,17 +28,32 @@ v,pi = gw.value_iteration()
 #print vals
 #gw.draw_values(vals)
 
-for s in range(gw.nstates):
-    #a = learner.best(s)
-    a = pi[s]
-    gw.draw_arrow(s,a)
+# for s in range(gw.nstates):
+#     #a = learner.best(s)
+#     a = pi[s]
+#     gw.draw_arrow(s,a)
 
-gw.redraw()
+# gw.redraw()
 
+# pi = np.ones(gw.nstates,dtype='int')
+# for i in gw.sindices:
+#     pi[i] = i % 8
+gw.set_arrows(pi)
 
 def policy(state):
     return pi[state]
 
+# for i in gw.sindices[11:]:
+#     gw.state2circle(i)
+#     gw.current = i
+#     for a in gw.actions:
+#         gw.move(a)
+#         print a
+#         time.sleep(.1)
+#         gw.current = i
+
+# s = gw.endstates[0]
+# gw.follow(s-1,policy)
 for i in gw.sindices:
     gw.follow(i,policy)
 

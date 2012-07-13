@@ -104,6 +104,18 @@ class GridworldGui( Gridworld ):
 
         self.surface.blit(txt, (y,x))
 
+    def set_arrows(self, pi):
+        self.arrows = pi
+
+    def draw_arrows(self):
+        """
+        self.arrows needs to be set.
+        """
+
+        for s in self.sindices:
+            a = self.arrows[s]
+            self.draw_arrow(s,a)
+
     def draw_arrow(self, state, action):
         # observe the current best policy?
 
@@ -113,57 +125,28 @@ class GridworldGui( Gridworld ):
 
         x,y = self.state2coord(state, center = True)
 
-        #         0 : left
-        #         1: up left
-        #         2 : up
-        #         3 : up right
-        #         4 : right
-        #         5 : right down
-        #         6 : down
-        #         7 : down left
-
         v = 1.0 / np.sqrt(2)
-        rot45 = np.array([(v,v),(-v,v)])
-
-
         rot90 = np.array([(0,1),(-1,0)])
-
-        if action == 0:
-            template = np.dot(template,rot90)
-            template = np.dot(template,rot90)
-
-        if action == 1:
-            template = np.dot(template, rot90)
-            template = np.dot(template, rot90)
-            template = np.dot(template, rot45)
-
-        if action == 2:
-            template = np.dot(template,rot90)
-            template = np.dot(template,rot90)
-            template = np.dot(template,rot90)
-
-        if action == 3:
-            template = np.dot(template,rot90)
-            template = np.dot(template,rot90)
-            template = np.dot(template,rot90)
-            template = np.dot(template,rot45)
-
-        if action == 4:
-            template = template
-
-        if action == 5:
-            template = np.dot(template, rot45)
-
-        if action == 6:
-            template = np.dot(template,rot90)
-
-        if action == 7:
-            template = np.dot(template, rot90)
-            template = np.dot(template, rot45)
+        rot45 = np.array([(v,-v),(v,v)]) # neg
 
 
+        
+        # align the template with the first action.
+        t0 = np.dot(template, rot90) 
+        t0 = np.dot(t0, rot90)
+        t0 = np.dot(t0, rot90)
+        
+        t1 = np.dot(t0, rot45)
+        t2 = np.dot(t1, rot45)
+        t3 = np.dot(t2, rot45)
+        t4 = np.dot(t3, rot45)
+        t5 = np.dot(t4, rot45)
+        t6 = np.dot(t5, rot45)
+        t7 = np.dot(t6, rot45)
 
-        arrowpoints = [(y + z[0],x + z[1]) for z in template]
+        t = [t0,t1,t2,t3,t4,t5,t6,t7]
+
+        arrowpoints = [(y + z[0],x + z[1]) for z in t[action]]
         pygame.draw.lines(self.surface,(55,55,55),0, arrowpoints, 1)
 
     def save(self, filename):
@@ -234,6 +217,9 @@ class GridworldGui( Gridworld ):
             if hasattr(self, 'endstates'):
                 if s in self.endstates:
                     pygame.draw.rect(self.surface,(0,255,0), coords)
+            if hasattr(self, 'arrows'):
+                self.draw_arrows()
+                    
 
     def ml_circle(self,x,y):
         # draw a circle in the grid cell corresponding to the cursor
@@ -258,8 +244,10 @@ class GridworldGui( Gridworld ):
     def follow(self, s, policy):
         self.current = s
         while not self.current  in self.endstates:
-            self.move(policy(s))
+            print policy(self.current)
+            self.move(policy(self.current))
             time.sleep(0.5)
+            
 
     def move(self, a, obs = False):
 

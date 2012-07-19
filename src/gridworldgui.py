@@ -14,8 +14,8 @@ import pygame.locals as pgl
 
 import numpy as np
 import random as pr
-from gridworld8 import Gridworld8 as Gridworld
-#from gridworld8 import SparseGridworld8 as Gridworld
+#from gridworld8 import Gridworld8 as Gridworld
+from gridworld8 import SparseGridworld8 as Gridworld
 
 class GridworldGui( Gridworld ):
 
@@ -37,11 +37,15 @@ class GridworldGui( Gridworld ):
         pygame.display.set_caption('Gridworld')
         self.screen = pygame.display.get_surface()
         self.surface = pygame.Surface(self.screen.get_size())
+        self.bg = pygame.Surface(self.screen.get_size())
+        self.bg_rendered = False # optimize background render
 
+        pdb.set_trace()
         self.background()
         self.screen.blit(self.surface, (0,0))
         pygame.display.flip()
 
+        self.build_templates()
         self.updategui = True # switch to stop updating gui if you want to collect a trace quickly
 
     def draw_state_labels(self):
@@ -105,25 +109,27 @@ class GridworldGui( Gridworld ):
         self.surface.blit(txt, (y,x))
 
     def set_arrows(self, pi):
+        self.bg_rendered = False # rerender background
         self.arrows = pi
 
-    def draw_arrows(self):
+    def draw_arrows(self,surface):
         """
         self.arrows needs to be set.
         """
 
         for s in self.sindices:
             a = self.arrows[s]
-            self.draw_arrow(s,a)
+            x,y = self.state2coord(s, center = True)
+            arrowpoints = [(y + z[0],x + z[1]) for z in self.t[a]]
+            pygame.draw.lines(surface,(55,55,55),0, arrowpoints, 1)
 
-    def draw_arrow(self, state, action):
-        # observe the current best policy?
 
-        # Note: template alread in "graphics" coordinates
+
+    def build_templates(self):
+
+        # Note: template already in "graphics" coordinates
         template = np.array([(-1,0),(0,0),(1,0),(0,1),(1,0),(0,-1)])
         template = self.size / 3 * template # scale template
-
-        x,y = self.state2coord(state, center = True)
 
         v = 1.0 / np.sqrt(2)
         rot90 = np.array([(0,1),(-1,0)])
@@ -144,10 +150,8 @@ class GridworldGui( Gridworld ):
         t6 = np.dot(t5, rot45)
         t7 = np.dot(t6, rot45)
 
-        t = [t0,t1,t2,t3,t4,t5,t6,t7]
-
-        arrowpoints = [(y + z[0],x + z[1]) for z in t[action]]
-        pygame.draw.lines(self.surface,(55,55,55),0, arrowpoints, 1)
+        self.t = [t0,t1,t2,t3,t4,t5,t6,t7]
+        
 
     def save(self, filename):
         pygame.image.save(self.surface, filename)
@@ -203,24 +207,28 @@ class GridworldGui( Gridworld ):
 
     def background(self):
 
-        self.surface.fill((0,0,0))
-        for s in range(self.nstates):
-            i,j = self.states[s]
-            x,y = self.indx2coord(i,j)
-            coords = pygame.Rect(y,x,self.size,self.size)
-            pygame.draw.rect(self.surface, (255,255,255), coords)
+        if self.bg_rendered:
+            self.surface.blit(self.bg,(0,0))
+        else:
+            self.bg.fill((0,0,0))
+            for s in range(self.nstates):
+                i,j = self.states[s]
+                x,y = self.indx2coord(i,j)
+                coords = pygame.Rect(y,x,self.size,self.size)
+                pygame.draw.rect(self.bg, (255,255,255), coords)
 
             # some code to draw "lake" cells blue
-            if hasattr(self, 'lake'):
-                if s in self.lake:
-                    pygame.draw.rect(self.surface,(0,0,255), coords)
-            if hasattr(self, 'endstates'):
-                if s in self.endstates:
-                    pygame.draw.rect(self.surface,(0,255,0), coords)
+                if hasattr(self, 'lake'):
+                    if s in self.lake:
+                        pygame.draw.rect(self.bg,(0,0,255), coords)
+                if hasattr(self, 'endstates'):
+                    if s in self.endstates:
+                        pygame.draw.rect(self.bg,(0,255,0), coords)
             if hasattr(self, 'arrows'):
-                self.draw_arrows()
-                    
-
+                self.draw_arrows(self.bg)
+            self.bg_rendered = True # don't render again unless flag is set
+            self.surface.blit(self.bg,(0,0))
+                              
     def ml_circle(self,x,y):
         # draw a circle in the grid cell corresponding to the cursor
         # location.  this was used to test the gui code and may be

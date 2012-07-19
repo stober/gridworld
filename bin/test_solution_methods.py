@@ -13,11 +13,14 @@ import numpy as np
 from td import TDQ,TD,Sarsa,SampleModelValueIteration
 import time
 
-endstates = [40]
-gw = GridworldGui(nrows=9,ncols=9,endstates=endstates, walls=[])
+# endstates = [40]
+# gw = GridworldGui(nrows=9,ncols=9,endstates=endstates, walls=[])
+
+endstates = [32, 2016, 1024, 1040, 1056, 1072]
+gw = GridworldGui(nrows=32,ncols=64,endstates=endstates, walls=[])
+
 #gw.updategui=False
 #gw.draw_state_labels()
-
 
 #learner = TDQ(8,81,0.1,0.9,0.9)
 #learner = TD(81,0.1,0.9,0.9)
@@ -26,9 +29,9 @@ learner = SampleModelValueIteration(8,81)
 
 # rw_model, transition_model
 # pdb.set_trace()
-v,pi = learner.learn(100,gw,verbose=True)
+# v,pi = learner.learn(100,gw,verbose=True)
 
-#v,pi = gw.value_iteration()
+v,pi = gw.value_iteration()
 #pi = np.ones(gw.nstates,dtype='int')
 
 #vals = { s : learner.value(s) for s in range(gw.nstates) }
@@ -44,7 +47,7 @@ v,pi = learner.learn(100,gw,verbose=True)
 # for i in gw.sindices:
 #     pi[i] = i % 8
 gw.set_arrows(pi)
-
+gw.background()
 
 # for i in gw.sindices[11:]:
 #     gw.state2circle(i)
@@ -56,7 +59,7 @@ gw.set_arrows(pi)
 #         gw.current = i
 
 # s = gw.endstates[0]
-# gw.follow(s-1,pi__getitem__)
+# gw.follow(s-1,pi.__getitem__)
 
 for i in gw.sindices:
     gw.follow(i,pi.__getitem__)

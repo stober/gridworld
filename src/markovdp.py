@@ -13,9 +13,6 @@ import random as pr
 import numpy as np
 import numpy.random as npr
 
-
-
-
 class MDP( object ):
 
     def __init__(self, nstates = 32, nactions = 4):
@@ -598,6 +595,45 @@ class SparseMDP( MDP ):
             return (self.observe(self.previous), a, self.reward, self.observe(self.current))
         else:
             return (self.previous, a, self.reward, self.current)
+
+    def value_iteration(self):
+        """
+        The optimal value function (and optimal policy) can be computed from the model directly using dynamic programming.
+        """
+        # compute values over states
+        values = np.zeros(self.nstates)
+        rtol = 1e-4
+
+        # compute the value function
+        condition = True
+        i = 0
+        while condition:
+            delta = 0
+            for s in self.sindices:
+                v = values[s]
+                sums = np.zeros(self.nactions)
+                for a in self.actions:
+                    dist = self.model[a,s]
+                    for (t,p) in dist:
+                        sums[a] += p * (self.rewards[t] + self.gamma * values[t])
+                values[s] = np.max(sums)
+                delta = max(delta, abs(v - values[s]))
+            print i,delta
+            i += 1
+            if delta < rtol:
+                break
+
+        # compute the optimal policy
+        policy = np.zeros(self.nstates, dtype=int) # record the best action for each state
+        for s in self.sindices:
+            sums = np.zeros(self.nactions)
+            for a in self.actions:
+                dist = self.model[a,s]
+                for (t,p) in dist:
+                    sums[a] += p * (self.rewards[t] + self.gamma * values[t])
+            policy[s] = np.argmax(sums)
+
+        return values,policy
 
 
 class MP( MDP ):

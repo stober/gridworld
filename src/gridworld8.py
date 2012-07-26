@@ -10,11 +10,41 @@ import os, sys, getopt, pdb, string
 import random as pr
 import numpy as np
 import numpy.linalg as la
-from markovdp import MDP,FastMDP,SparseMDP
+from markovdp import MDP,FastMDP,SparseMDP, Features
+
+class RBFFeatures( Features ):
+
+    def __init__(self, nrows, ncols, nactions, nrbf):
+        self.nrows = nrows
+        self.ncols = ncols
+        self.nrbf = nrbf
+        self.features_cnt = nrbf * nactions + 1
+        self.features = np.zeros(self.feature_cnt)
+        self.rbf_loc = pr.sample([(i,j) for i in range(self.nrows) for j in range(self.ncols)], nrbf)
+
+    def coords(self, s):
+        """
+        Location of state in gridworld coordinates.
+        """
+        return (s / self.ncols, s % self.ncols)
+
+    def phi(self, s, a):
+        self.features[:] = 0
+
+        # compute the rbf functions
+        j = np.array(self.coords(s))
+        
+        for i,c in enumerate(self.rbf_loc):
+            self.features[a * self.nrbf + i] = np.exp(-.001 *la.norm(c - j, ord=np.inf) ** 2)
+
+        self.features[-1] = 1.0
+        return self.features
+
+        
 
 class SparseGridworld8( SparseMDP ):
 
-    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0], nrbf = 15):
+    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0]):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -30,7 +60,6 @@ class SparseGridworld8( SparseMDP ):
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
 
-        self.rbf_loc = [np.array(self.coords(i)) for i in pr.sample(self.sindices, nrbf)]
 
     def is_state(self, s):
         return s in self.rstates
@@ -49,23 +78,6 @@ class SparseGridworld8( SparseMDP ):
                    np.array((0,1)), np.array((-1,1))]
 
         return actions[a]
-
-    def phi(self, s, a):
-        r = np.zeros(len(self.rbf_loc) * self.nactions + 1)
-
-        # compute the rbf functions
-        j = np.array(self.coords(s))
-        
-        for i,c in enumerate(self.rbf_loc):
-            #print la.norm(c - j) ** 2, -.0001 *la.norm(c - j,ord=np.inf) ** 2, np.exp(-.001 *la.norm(c - j,ord=np.inf) ** 2)
-            r[a * len(self.rbf_loc) + i] = np.exp(-.001 *la.norm(c - j, ord=np.inf) ** 2)
-
-        r[-1] = 1.0
-        return r
-
-
-    def nfeatures(self):
-        return len(self.rbf_loc) * self.nactions + 1
 
     # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self):
@@ -86,6 +98,12 @@ class SparseGridworld8( SparseMDP ):
             return [(self.state_index(ns),1.0)]
         else:
             return [(i,1.0)]
+
+class SparseRBFGridworld8( SparseGridworld8, RBFFeatures ):
+
+    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0], nrbf = 15):
+        SparseGridworld8.__init__(self,nrows, ncols, walls, endstates)
+        RBFFeatures.__init__(self, self.nrows, self.ncols, self.nactions, nrbf)
 
 class FastGridworld8( FastMDP ):
 

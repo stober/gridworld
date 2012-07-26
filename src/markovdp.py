@@ -13,7 +13,114 @@ import random as pr
 import numpy as np
 import numpy.random as npr
 
-class MDP( object ):
+class Features( object ):
+    """
+    Mixin for specific feature functions. Default is tabular feature
+    representation.
+    """
+
+    def __init__(self, nstates, nactions):
+        self.nstates = nstates
+        self.nactions = nactions
+        self.feature_cnt = nstates * nactions + 1
+        self.features = np.zeros(self.feature_cnt)
+
+    def nfeatures(self):
+        return self.feature_cnt
+
+    def phi(self, s, a):
+        self.features[:] = 0
+        self.features[s + (a * self.nstates)] = 1.0
+        self.features[-1] = 1.0
+        return self.features
+
+    def vphi(self, s):
+        features = np.zeros(self.nstates + 1)
+        features[s] = 1.0
+        features[-1] = 1.0
+        return features
+
+class PolyFeatures( Features ):
+    """
+    Polynomial feature representation.
+    """
+
+    def __init__(self, nstates, nactions, maxexp = 9 ):
+        self.nstates = nstates
+        self.nactions = nactions
+        self.maxexp = maxexp
+        self.feature_cnt = nstates * maxexp + 1
+        self.features = np.zeros(self.feature_cnt)
+
+    def phi(self, s, a):
+        self.features[:] = 0
+        for i in range(self.maxexp):
+            self.features[a * self.maxexp + i] = s ** i
+
+        self.features[-1] = 1.0
+        return features
+
+    def vphi(self, s):
+        features = np.zeros(self.maxexp + 1)
+        for i in range(self.maxexp):
+            features[i] = s ** i
+        features[-1] = 1.0
+        return features
+
+class IndicatorFeatures( Features ):
+    """
+    Indicate the state and the action.
+    """
+    def __init__(self, nstates, nactions):
+        self.nstates = nstates
+        self.nactions = nactions
+        self.feature_cnt = nstates + nactions + 1
+        self.features = np.zeros(self.feature_cnt)
+
+    def phi(self, s, a):
+        self.features[:] = 0
+        self.features[s] = 1.0
+        self.features[nstates + a] = 1.0
+        self.features[-1] = 1.0
+        return self.features
+
+    def vphi(self, s):
+        features = np.zeros(self.nstates + 1)
+        features[s] = 1.0
+        features[-1] = 1.0
+        return features
+
+class HashFeatures( Features ):
+    """
+    Hash features.
+    """
+    def __init__(self, nstates, nactions, nfeatures = 15 ):
+        self.nstates = nstates
+        self.nactions = nactions
+        self.feature_cnt = nfeatures
+        self.prime = 191
+        self.a = 36
+        self.b = 105
+        self.features = np.zeros(self.feature_cnt)
+
+    def phi(self, s, a):
+        self.features[:] = 0
+        x = (s + 1) * (a + 1)
+        f = (self.a * x + self.b) % self.prime
+        g = f % self.feature_cnt
+        self.features[g] = 1.0
+        return self.features
+
+
+    def vphi(self, s):
+        features = np.zeros(self.feature_cnt)
+        x = (s + 1)
+        f = (self.s * x + self.b) % self.prime
+        g = f % self.feature_cnt
+        features[g] = 1.0
+        return features
+    
+class MDP( Features ):
 
     def __init__(self, nstates = 32, nactions = 4):
         self.nstates = nstates
@@ -41,21 +148,7 @@ class MDP( object ):
 
         self.reset()
 
-        # the tabular number of features (generic)
-        self.tab_nfeatures = self.nstates * self.nactions + 1
-
-        # the polynomial number of features (generic)
-        self.maxexp = 9
-        self.poly_nfeatures = self.nactions * self.maxexp + 1
-
-        # the indicator representation of phi (generic)
-        self.ind_nfeatures = self.nstates + self.nactions
-
-        # the hash method of representation (generic)
-        self.hash_nfeatures = 16
-        self.hash_prime = 191 # should be bigger than self.nstates * self.nactions?
-        self.a = 36
-        self.b = 105
+        Features.__init__(self, self.nstates, self.nactions) # feature mixin supplies phi and related methods
 
         # Both the transition model and rewards are tensors. For a
         # particular action, the model tensor resolves to a stochastic
@@ -117,7 +210,7 @@ class MDP( object ):
         self.vcnts[self.current] += 1
 
     def initial_policy(self):
-        return np.zeros(self.tab_nfeatures)
+        return np.zeros(self.nfeatures())
 
     def initialize_reward(self, a, i, j):
         if j == 31:
@@ -274,49 +367,6 @@ class MDP( object ):
     def callback(self, *args, **kwargs):
         pass
 
-    def ind_phi(self, s, a):
-        features = np.zeros(self.ind_nfeatures)
-        features[s] = 1.0
-        features[self.nstates + a] = 1.0
-        return features
-
-    def tab_phi(self, s, a):
-        # action features - default is a tabular representation
-        features = np.zeros(self.tab_nfeatures)
-        features[s + (a * self.nstates)] = 1.0
-        features[-1] = 1.0
-        return features
-
-    def poly_phi(self, s, a):
-        features = np.zeros(self.poly_nfeatures)
-
-        for i in range(self.maxexp):
-            features[a * self.maxexp + i] = s ** i
-
-        features[-1] = 1.0
-        return features
-
-    def hash_phi(self, s, a):
-        features = np.zeros(self.hash_nfeatures)
-        x = (s + 1) * (a + 1)
-        f = (self.a * x + self.b) % self.hash_prime
-        g = f % self.hash_nfeatures
-        features[g] = 1.0
-        return features
-
-    def nfeatures(self):
-        return self.tab_nfeatures
-
-    def phi(self, s, a):
-        return self.tab_phi(s,a)
-
-    def vphi(self, s):
-        # just a tabular version of the phi function at the moment
-        features = np.zeros(self.nstates + 1)
-        features[s] = 1.0
-        features[-1] = 1.0
-        return features
-
     def generate_value_function(self, w):
         qfunc = {}
         vfunc = {}
@@ -439,9 +489,6 @@ class FastMDP(MDP):
         self.vcnts = np.zeros(self.nstates)
         self.gamma = 0.9
 
-        # the tabular number of features (generic)
-        self.tab_nfeatures = self.nstates * self.nactions + 1
-
         if not hasattr(self, 'startindices'):
             self.startindices = range(self.nstates)
 
@@ -459,6 +506,8 @@ class FastMDP(MDP):
             self.rewards[i] = self.get_reward(i)
 
         self.reset()
+
+        Features.__init__(self, self.nstates, self.nactions) # feature mixin supplies phi and related methods
 
     @staticmethod
     def load(filename):
@@ -573,8 +622,7 @@ class SparseMDP( MDP ):
 
         self.reset()
 
-        # the tabular number of features (generic)
-        self.tab_nfeatures = self.nstates * self.nactions + 1
+        Features.__init__(self, self.nstates, self.nactions) # feature mixin supplies phi and related methods
 
     def move(self, a, obs=False):
         self.previous = self.current

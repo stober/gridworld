@@ -40,7 +40,6 @@ class GridworldGui( Gridworld ):
         self.bg = pygame.Surface(self.screen.get_size())
         self.bg_rendered = False # optimize background render
 
-        pdb.set_trace()
         self.background()
         self.screen.blit(self.surface, (0,0))
         pygame.display.flip()
@@ -180,17 +179,14 @@ class GridworldGui( Gridworld ):
 
     def callback(self, *args, **kwargs):
         iter, current = args[0], args[1]
-        self.background()
 
-
+        pi = np.zeros(self.nstates, dtype=int)
         for s in range(self.nstates):
-            a = self.linear_policy(current,s)
-            self.draw_arrow(s,a)
-            #self.drawvalues(s,current)
+            pi[s] = self.linear_policy(current,s)
 
-
-        self.screen.blit(self.surface, (0,0))
-        pygame.display.flip()
+        self.set_arrows(pi)
+        self.background()
+        self.redraw()
 
     def indx2coord(self,i,j, center = False):
         # the +1 indexing business is to ensure that the grid cells
@@ -224,6 +220,10 @@ class GridworldGui( Gridworld ):
                 if hasattr(self, 'endstates'):
                     if s in self.endstates:
                         pygame.draw.rect(self.bg,(0,255,0), coords)
+                if hasattr(self, 'walls'):
+                    if s in self.walls:
+                        pygame.draw.rect(self.bg,(0,0,0), coords)
+
             if hasattr(self, 'arrows'):
                 self.draw_arrows(self.bg)
             self.bg_rendered = True # don't render again unless flag is set
@@ -267,13 +267,24 @@ class GridworldGui( Gridworld ):
 
         return (previous, a, reward, current)
 
-    def mainloop(self, w):
+    def trace(self, tlen = 1000, policy = None, obs = False, show = True):
+        
+        t = None
+        if not show:
+            pval = self.updategui
+            self.updategui = False
+            t = Gridworld.trace(self, tlen = tlen, policy = policy, obs = obs)
+            self.updategui = pval
+        else:
+            t = Gridworld.trace(self, tlen = tlen, policy = policy, obs = obs)
+            
+        return t
 
-        # TODO: interative method to explore feature space
+    def mainloop(self):
 
-        self.callback(0,w)
         self.screen.blit(self.surface,(0,0))
         pygame.display.flip()
+        self.state2circle(self.current)
 
         while True:
             for event in pygame.event.get():
@@ -282,19 +293,23 @@ class GridworldGui( Gridworld ):
                 elif event.type == pgl.KEYDOWN and event.key == pgl.K_ESCAPE:
                     sys.exit()
                 elif event.type == pgl.MOUSEMOTION:
-
-                    # self.background()
-                    #print type
-                    self.callback(0,w)
-                    self.ml_circle(*event.pos)
-
-                    # do this again to make the circle visible
-                    self.screen.blit(self.surface, (0,0))
-                    pygame.display.flip()
-
+                    pass
+                elif event.type == pgl.KEYDOWN and event.key == pgl.K_DOWN:
+                    print "Down"
+                    self.move(4)
+                elif event.type == pgl.KEYDOWN and event.key == pgl.K_UP:
+                    print "Up"
+                    self.move(0)
+                elif event.type == pgl.KEYDOWN and event.key == pgl.K_LEFT:
+                    print "Left"
+                    self.move(2)
+                elif event.type == pgl.KEYDOWN and event.key == pgl.K_RIGHT:
+                    print "Right"
+                    self.move(6)
 
                 else:
-                    print event
+                    pass
+                    #print event
 
             self.screen.blit(self.surface,(0,0))
             pygame.display.flip()

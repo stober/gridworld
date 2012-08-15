@@ -12,6 +12,7 @@ import functools
 import random as pr
 import numpy as np
 import numpy.random as npr
+import scipy.sparse as sp
 
 class Features( object ):
     """
@@ -24,15 +25,22 @@ class Features( object ):
         self.nactions = nactions
         self.feature_cnt = nstates * nactions + 1
         self.features = np.zeros(self.feature_cnt)
+        self.sparse_features = sp.dok_matrix((self.feature_cnt,1))
 
     def nfeatures(self):
         return self.feature_cnt
 
-    def phi(self, s, a):
-        self.features[:] = 0
-        self.features[s + (a * self.nstates)] = 1.0
-        self.features[-1] = 1.0
-        return self.features
+    def phi(self, s, a, sparse=False):
+        if sparse:
+            self.sparse_features.clear()
+            self.sparse_features[s + (a * self.nstates),0] = 1.0
+            self.sparse_features[-1,0] = 1.0
+            return self.sparse_features
+        else:
+            self.features[:] = 0
+            self.features[s + (a * self.nstates)] = 1.0
+            self.features[-1] = 1.0
+            return self.features
 
     def vphi(self, s):
         features = np.zeros(self.nstates + 1)

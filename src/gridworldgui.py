@@ -220,9 +220,9 @@ class GridworldGui( Gridworld ):
                 if hasattr(self, 'endstates'):
                     if s in self.endstates:
                         pygame.draw.rect(self.bg,(0,255,0), coords)
-                if hasattr(self, 'walls'):
-                    if s in self.walls:
-                        pygame.draw.rect(self.bg,(0,0,0), coords)
+                # if hasattr(self, 'walls'):
+                #     if s in self.walls:
+                #         pygame.draw.rect(self.bg,(0,0,0), coords)
 
             if hasattr(self, 'arrows'):
                 self.draw_arrows(self.bg)

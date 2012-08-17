@@ -35,12 +35,12 @@ class Features( object ):
             sparse_features.clear()
             sparse_features[s + (a * self.nstates),0] = 1.0
             sparse_features[-1,0] = 1.0
-            return self.sparse_features
+            return sparse_features
         else:
             features = np.zeros(self.feature_cnt)
             features[s + (a * self.nstates)] = 1.0
             features[-1] = 1.0
-            return self.features
+            return features
 
     def vphi(self, s):
         features = np.zeros(self.nstates + 1)

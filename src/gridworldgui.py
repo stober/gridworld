@@ -207,8 +207,7 @@ class GridworldGui( Gridworld ):
             self.surface.blit(self.bg,(0,0))
         else:
             self.bg.fill((0,0,0))
-            for s in range(self.nstates):
-                i,j = self.states[s]
+            for s,(i,j) in self.states.items():
                 x,y = self.indx2coord(i,j)
                 coords = pygame.Rect(y,x,self.size,self.size)
                 pygame.draw.rect(self.bg, (255,255,255), coords)
@@ -220,9 +219,6 @@ class GridworldGui( Gridworld ):
                 if hasattr(self, 'endstates'):
                     if s in self.endstates:
                         pygame.draw.rect(self.bg,(0,255,0), coords)
-                # if hasattr(self, 'walls'):
-                #     if s in self.walls:
-                #         pygame.draw.rect(self.bg,(0,0,0), coords)
 
             if hasattr(self, 'arrows'):
                 self.draw_arrows(self.bg)
@@ -295,21 +291,17 @@ class GridworldGui( Gridworld ):
                 elif event.type == pgl.MOUSEMOTION:
                     pass
                 elif event.type == pgl.KEYDOWN and event.key == pgl.K_DOWN:
-                    print "Down"
                     self.move(4)
                 elif event.type == pgl.KEYDOWN and event.key == pgl.K_UP:
-                    print "Up"
                     self.move(0)
                 elif event.type == pgl.KEYDOWN and event.key == pgl.K_LEFT:
-                    print "Left"
-                    self.move(2)
+                    #self.move(2)
+                    self.move(1)
                 elif event.type == pgl.KEYDOWN and event.key == pgl.K_RIGHT:
-                    print "Right"
                     self.move(6)
 
                 else:
                     pass
-                    #print event
 
             self.screen.blit(self.surface,(0,0))
             pygame.display.flip()

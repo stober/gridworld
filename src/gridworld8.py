@@ -44,7 +44,7 @@ class RBFFeatures( Features ):
 
 class SparseGridworld8( SparseMDP ):
 
-    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0]):
+    def __init__(self, nrows = 5, ncols = 5, actions = range(8), walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0]):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -54,8 +54,9 @@ class SparseGridworld8( SparseMDP ):
         self.states = dict([(i,s) for (i,s) in enumerate(grid)])
         self.rstates = dict([(s,i) for (i,s) in enumerate(grid)]) # reverse lookup by grid coords
 
+        self.actions = actions
         self.nstates = len(self.states)
-        self.nactions = 8
+        self.nactions = len(actions)
         self.endstates = endstates
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
@@ -77,7 +78,7 @@ class SparseGridworld8( SparseMDP ):
                    np.array((1,0)), np.array((1,1)),
                    np.array((0,1)), np.array((-1,1))]
 
-        return actions[a]
+        return actions[self.actions[a]]
 
     # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self):

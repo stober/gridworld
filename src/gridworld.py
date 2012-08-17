@@ -4,6 +4,8 @@ Author: Jeremy M. Stober
 Program: GRIDWORLD.PY
 Date: Monday, January 11 2010
 Description: A class for building gridworlds.
+
+Note: This should be considered deprecated. Use gridworld8.py (which will eventually become gridworld.py).
 """
 
 import os, sys, getopt, pdb, string

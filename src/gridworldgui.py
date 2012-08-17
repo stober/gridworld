@@ -119,7 +119,7 @@ class GridworldGui( Gridworld ):
         for s in self.sindices:
             a = self.arrows[s]
             x,y = self.state2coord(s, center = True)
-            arrowpoints = [(y + z[0],x + z[1]) for z in self.t[a]]
+            arrowpoints = [(y + z[0],x + z[1]) for z in self.t[self.allowed_actions[a]]]
             pygame.draw.lines(surface,(55,55,55),0, arrowpoints, 1)
 
 

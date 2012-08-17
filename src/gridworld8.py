@@ -54,7 +54,7 @@ class SparseGridworld8( SparseMDP ):
         self.states = dict([(i,s) for (i,s) in enumerate(grid)])
         self.rstates = dict([(s,i) for (i,s) in enumerate(grid)]) # reverse lookup by grid coords
 
-        self.actions = actions
+        self.allowed_actions = actions
         self.nstates = len(self.states)
         self.nactions = len(actions)
         self.endstates = endstates
@@ -78,7 +78,7 @@ class SparseGridworld8( SparseMDP ):
                    np.array((1,0)), np.array((1,1)),
                    np.array((0,1)), np.array((-1,1))]
 
-        return actions[self.actions[a]]
+        return actions[self.allowed_actions[a]]
 
     # initialize_* methods create a complete model -- inefficient
     def initialize_rewards(self):

@@ -24,22 +24,22 @@ class Features( object ):
         self.nstates = nstates
         self.nactions = nactions
         self.feature_cnt = nstates * nactions + 1
-        self.features = np.zeros(self.feature_cnt)
-        self.sparse_features = sp.dok_matrix((self.feature_cnt,1))
-
+        
     def nfeatures(self):
         return self.feature_cnt
 
     def phi(self, s, a, sparse=False):
+        
         if sparse:
-            self.sparse_features.clear()
-            self.sparse_features[s + (a * self.nstates),0] = 1.0
-            self.sparse_features[-1,0] = 1.0
+            sparse_features = sp.dok_matrix((self.feature_cnt,1))
+            sparse_features.clear()
+            sparse_features[s + (a * self.nstates),0] = 1.0
+            sparse_features[-1,0] = 1.0
             return self.sparse_features
         else:
-            self.features[:] = 0
-            self.features[s + (a * self.nstates)] = 1.0
-            self.features[-1] = 1.0
+            features = np.zeros(self.feature_cnt)
+            features[s + (a * self.nstates)] = 1.0
+            features[-1] = 1.0
             return self.features
 
     def vphi(self, s):
@@ -58,14 +58,13 @@ class PolyFeatures( Features ):
         self.nactions = nactions
         self.maxexp = maxexp
         self.feature_cnt = nstates * maxexp + 1
-        self.features = np.zeros(self.feature_cnt)
-
+        
     def phi(self, s, a):
-        self.features[:] = 0
+        features = np.zeros(self.feature_cnt)
         for i in range(self.maxexp):
-            self.features[a * self.maxexp + i] = s ** i
+            features[a * self.maxexp + i] = s ** i
 
-        self.features[-1] = 1.0
+        features[-1] = 1.0
         return features
 
     def vphi(self, s):
@@ -83,14 +82,14 @@ class IndicatorFeatures( Features ):
         self.nstates = nstates
         self.nactions = nactions
         self.feature_cnt = nstates + nactions + 1
-        self.features = np.zeros(self.feature_cnt)
 
     def phi(self, s, a):
-        self.features[:] = 0
-        self.features[s] = 1.0
-        self.features[nstates + a] = 1.0
-        self.features[-1] = 1.0
-        return self.features
+        features = np.zeros(self.feature_cnt)
+        features[:] = 0
+        features[s] = 1.0
+        features[nstates + a] = 1.0
+        features[-1] = 1.0
+        return features
 
     def vphi(self, s):
         features = np.zeros(self.nstates + 1)
@@ -109,15 +108,14 @@ class HashFeatures( Features ):
         self.prime = 191
         self.a = 36
         self.b = 105
-        self.features = np.zeros(self.feature_cnt)
 
     def phi(self, s, a):
-        self.features[:] = 0
+        features = np.zeros(self.feature_cnt)
         x = (s + 1) * (a + 1)
         f = (self.a * x + self.b) % self.prime
         g = f % self.feature_cnt
-        self.features[g] = 1.0
-        return self.features
+        features[g] = 1.0
+        return features
 
 
     def vphi(self, s):

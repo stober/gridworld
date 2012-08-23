@@ -23,7 +23,7 @@ class Chainwalk( MDP ):
         # 1 == R
 
         self.gamma = 0.9
-        self.nfeatures = 9
+        self.feature_cnt = 9
         MDP.__init__(self, nstates = 4, nactions = 2)
 
     def reset(self):

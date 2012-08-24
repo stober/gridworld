@@ -13,6 +13,7 @@ import random as pr
 import numpy as np
 import numpy.random as npr
 import scipy.sparse as sp
+from utils import sp_create
 
 class Features( object ):
     """
@@ -28,13 +29,10 @@ class Features( object ):
     def nfeatures(self):
         return self.feature_cnt
 
-    def phi(self, s, a, sparse=False, format="csr"):
+    def phi(self, s, a, sparse=False, format="dok"):
         
         if sparse:
-            if format == "dok"
-                sparse_features = sp.dok_matrix((self.feature_cnt,1))
-            elif format == "csr":
-                sparse_features = sp.csr_matrix((self.feature_cnt,1))
+            sparse_features = sp_create(self.feature_cnt,1,format)
             sparse_features[s + (a * self.nstates),0] = 1.0
             sparse_features[-1,0] = 1.0
             return sparse_features

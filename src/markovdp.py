@@ -29,7 +29,7 @@ class Features( object ):
     def nfeatures(self):
         return self.feature_cnt
 
-    def phi(self, s, a, sparse=False, format="dok"):
+    def phi(self, s, a, sparse=False, format="csr"):
         
         if sparse:
             cols = np.array([0,0])

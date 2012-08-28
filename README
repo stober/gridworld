@@ -2,9 +2,11 @@ Gridwolds and Markov Decision Processes in Python
 
 Author: Jeremy Stober
 Contact: stober@gmail.com
-Version: 0.01
+License: BSD (see LICENSE)
 
 This package contains implementations of discrete mdps known as
 gridworlds that are convenient for testing reinforcement learning
 algorithms. Some visualization is provided, along with a few other
 mdps drawn from the literature on reinforcement learning.
+
+Note: This package now depends on https://github.com/stober/utils for sparse feature generation.

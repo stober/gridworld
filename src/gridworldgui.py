@@ -16,16 +16,39 @@ import numpy as np
 import random as pr
 #from gridworld8 import Gridworld8 as Gridworld
 from gridworld8 import SparseGridworld8 as Gridworld
+from gridworld8 import SparseRBFGridworld8
+
+def coords(nrows,ncols,s):
+    return (s / ncols, s % ncols)
+
+def wall_pattern(nrows,ncols,endstate=0,pattern="comb"):
+    """Generate a specific wall pattern for a particular gridworld."""
+
+    goal = coords(nrows,ncols,endstate)
+    walls = []
+
+    if goal[1] % 2 == 0:
+        wmod = 1            
+    else:
+        wmod = 0
+
+    for i in range(ncols):
+        for j in range(nrows):
+            if i % 2 == wmod and j != nrows - 1:
+                walls.append((i,j))
+
+    return walls
 
 class GridworldGui( Gridworld ):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, size=16, *args, **kwargs):
         # initialize the base gridworld class (no gui)
-        Gridworld.__init__(self, *args, **kwargs)
+        super(GridworldGui, self).__init__(*args, **kwargs)
+        self.initialize_pygame(size=size)
 
+    def initialize_pygame(self,size=16):
         nrows = self.nrows
         ncols = self.ncols
-        size = 16
         # compute the appropriate height and width (with room for cell borders)
         self.height = nrows * size + nrows + 1
         self.width = ncols * size + ncols + 1
@@ -121,8 +144,6 @@ class GridworldGui( Gridworld ):
             x,y = self.state2coord(s, center = True)
             arrowpoints = [(y + z[0],x + z[1]) for z in self.t[self.allowed_actions[a]]]
             pygame.draw.lines(surface,(55,55,55),0, arrowpoints, 1)
-
-
 
     def build_templates(self):
 
@@ -255,11 +276,10 @@ class GridworldGui( Gridworld ):
 
     def move(self, a, obs = False):
 
-        (previous, a, reward, current) = Gridworld.move(self, a)
+        (previous, a, reward, current) = super(GridworldGui,self).move( a)
 
         if self.updategui:
             self.state2circle(current)
-
 
         return (previous, a, reward, current)
 
@@ -269,10 +289,10 @@ class GridworldGui( Gridworld ):
         if not show:
             pval = self.updategui
             self.updategui = False
-            t = Gridworld.trace(self, tlen = tlen, policy = policy, obs = obs)
+            t = super(GridworldGui,self).trace( tlen = tlen, policy = policy, obs = obs)
             self.updategui = pval
         else:
-            t = Gridworld.trace(self, tlen = tlen, policy = policy, obs = obs)
+            t = super(GridworldGui,self).trace( tlen = tlen, policy = policy, obs = obs)
             
         return t
 
@@ -311,7 +331,6 @@ class GridworldGui( Gridworld ):
         This method runs the agent's policy from every state in the GUI for visual examination.
         """
 
-
         for i in range(self.nstates):
 
             print "Testing state %d" % i
@@ -330,12 +349,14 @@ class GridworldGui( Gridworld ):
                 time.sleep(1)
                 steps += 1
 
-
-
 if __name__ == '__main__':
 
+    walls = wall_pattern(64,64)
+    gw = GridworldGui(nrows = 64, ncols = 64, walls = [], endstates = [0], size=8)
+    t = gw.trace(10000)
+    gw.mainloop()
 
-    gw = GridworldGui(ncols = 32, nrows = 64, walls = [], endstates = [])
+
     #gw.save("gridworld.png")
     #t = gw.trace(1000)
-    gw.test_drawactions()
+    #gw.test_drawactions()

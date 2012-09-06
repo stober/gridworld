@@ -13,6 +13,27 @@ import numpy.linalg as la
 from markovdp import MDP,FastMDP,SparseMDP, Features
 from utils import sp_create, sp_create_data
 
+def coords(nrows,ncols,s):
+    return (s / ncols, s % ncols)
+
+def wall_pattern(nrows,ncols,endstate=0,pattern="comb"):
+    """Generate a specific wall pattern for a particular gridworld."""
+
+    goal = coords(nrows,ncols,endstate)
+    walls = []
+
+    if goal[1] % 2 == 0:
+        wmod = 1            
+    else:
+        wmod = 0
+
+    for i in range(ncols):
+        for j in range(nrows):
+            if i % 2 == wmod and j != nrows - 1:
+                walls.append((i,j))
+
+    return walls
+
 class RBFFeatures( Features ):
 
     def __init__(self, nrows, ncols, nactions, nrbf):

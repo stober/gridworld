@@ -15,31 +15,11 @@ import pygame.locals as pgl
 import numpy as np
 import random as pr
 from gridworld8 import SparseRBFGridworld8,SparseGridworld8
+from gridworld8 import wall_pattern
 
-def coords(nrows,ncols,s):
-    return (s / ncols, s % ncols)
-
-def wall_pattern(nrows,ncols,endstate=0,pattern="comb"):
-    """Generate a specific wall pattern for a particular gridworld."""
-
-    goal = coords(nrows,ncols,endstate)
-    walls = []
-
-    if goal[1] % 2 == 0:
-        wmod = 1            
-    else:
-        wmod = 0
-
-    for i in range(ncols):
-        for j in range(nrows):
-            if i % 2 == wmod and j != nrows - 1:
-                walls.append((i,j))
-
-    return walls
-
-def gridworld_gui_factory(baseclass):
-    """
-    In order to make it easy to add a gui to any gridworld, this factory method modifies the baseclass.
+def gridworld_gui_factory(baseclass):     
+    """     
+    In order to make it easy to add a gui to any gridworld, this factory method modifies the baseclass (Gridworld) so that the subclass is a Gui+Gridworld or the desired type.     
     """
 
     class GridworldGui(baseclass):
@@ -354,18 +334,17 @@ def gridworld_gui_factory(baseclass):
 
     return GridworldGui
 
+# Here we use the factory to construct our desired subclasses using different Gridworld base classes.
 GridworldGui = gridworld_gui_factory(SparseGridworld8)
 RBFGridworldGui = gridworld_gui_factory(SparseRBFGridworld8)
 
 if __name__ == '__main__':
 
     walls = wall_pattern(64,64)
-    gw = GridworldGui(nrows = 64, ncols = 64, walls = [], endstates = [0], size=8)
+    gw = GridworldGui(nrows = 64, ncols = 64, walls = walls, endstates = [0], size=8)
+    t = gw.trace(1000)
+    gw.mainloop()
     
-    #t = gw.trace(10000)
-    #gw.mainloop()
-
-
     #gw.save("gridworld.png")
     #t = gw.trace(1000)
     #gw.test_drawactions()

@@ -11,6 +11,7 @@ import random as pr
 import numpy as np
 import numpy.linalg as la
 from markovdp import MDP,FastMDP,SparseMDP, Features
+from utils import sp_create, sp_create_data
 
 class RBFFeatures( Features ):
 
@@ -18,9 +19,11 @@ class RBFFeatures( Features ):
         self.nrows = nrows
         self.ncols = ncols
         self.nrbf = nrbf
-        self.features_cnt = nrbf * nactions + 1
-        self.features = np.zeros(self.feature_cnt)
+        self.feature_cnt = nrbf * nactions + 1
         self.rbf_loc = pr.sample([(i,j) for i in range(self.nrows) for j in range(self.ncols)], nrbf)
+
+    def nfeatures(self):
+        return self.feature_cnt
 
     def coords(self, s):
         """
@@ -28,23 +31,30 @@ class RBFFeatures( Features ):
         """
         return (s / self.ncols, s % self.ncols)
 
-    def phi(self, s, a):
-        self.features[:] = 0
+    def rfunc(self, s):
+        """
+        Compute the responses. Override for different resposne functions.
+        """
+        c = np.array(self.coords(s))
+        return [ np.exp(-.001 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ]
 
-        # compute the rbf functions
-        j = np.array(self.coords(s))
-        
-        for i,c in enumerate(self.rbf_loc):
-            self.features[a * self.nrbf + i] = np.exp(-.001 *la.norm(c - j, ord=np.inf) ** 2)
-
-        self.features[-1] = 1.0
-        return self.features
-
-        
+    def phi(self, s, a, sparse=False, format="csr"):
+        if sparse:
+            cols = np.array([0] * (self.nrbf + 1))
+            rows = np.array([a * self.nrbf + i for i in range(self.nrbf)] + [self.feature_cnt - 1])
+            data = np.array(self.rfunc(s) + [1.0])
+            sparse_features = sp_create_data(data,rows,cols,self.feature_cnt,1,format)
+            return sparse_features
+        else:
+            features = np.zeros(self.feature_cnt)
+            for i,f in enumerate(self.rfunc(s)):
+                features[a * self.nrbf + i] = f
+            features[-1] = 1.0
+            return features
 
 class SparseGridworld8( SparseMDP ):
 
-    def __init__(self, nrows = 5, ncols = 5, actions = range(8), walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0]):
+    def __init__(self, nrows = 5, ncols = 5, actions = None, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0]):
         self.nrows = nrows
         self.ncols = ncols
 
@@ -53,6 +63,9 @@ class SparseGridworld8( SparseMDP ):
         grid = [s for s in grid if not s in self.walls]
         self.states = dict([(i,s) for (i,s) in enumerate(grid)])
         self.rstates = dict([(s,i) for (i,s) in enumerate(grid)]) # reverse lookup by grid coords
+
+        if actions is None:
+            actions = range(8)
 
         self.allowed_actions = actions
         self.nstates = len(self.states)
@@ -103,7 +116,7 @@ class SparseGridworld8( SparseMDP ):
 class SparseRBFGridworld8( SparseGridworld8, RBFFeatures ):
 
     def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0], nrbf = 15):
-        SparseGridworld8.__init__(self,nrows, ncols, walls, endstates)
+        SparseGridworld8.__init__(self, nrows=nrows, ncols=ncols, walls=walls, endstates=endstates)
         RBFFeatures.__init__(self, self.nrows, self.ncols, self.nactions, nrbf)
 
 class FastGridworld8( FastMDP ):
@@ -258,7 +271,9 @@ class Gridworld8( MDP ):
 
 if __name__ == '__main__':
 
-    gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
-    gws = SparseGridworld8(nrows = 32, ncols = 64)
-    #bad = Gridworld8(nrows = 32, ncols=64) # will blowup memory
-    t = gws.trace(1000)
+    # gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
+    # gws = SparseGridworld8(nrows = 32, ncols = 64)
+    # bad = Gridworld8(nrows = 32, ncols=64) # will blowup memory
+    # t = gws.trace(1000)
+    gw = SparseRBFGridworld8(nrows = 32, ncols = 32)
+    t = gw.trace(1000)

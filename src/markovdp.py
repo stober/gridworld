@@ -13,7 +13,7 @@ import random as pr
 import numpy as np
 import numpy.random as npr
 import scipy.sparse as sp
-from utils import sp_create, sp_create_data
+from utils import sp_create, sp_create_data,flip
 
 class Features( object ):
     """
@@ -332,6 +332,13 @@ class MDP( Features ):
     def linear_policy(self, w,s):
         # note that phi should be overridden (or learned in some way)
         return np.argmax([np.dot(w,self.phi(s,a)) for a in range(self.nactions)])
+
+    def epsilon_linear_policy(self, epsilon, w, s):
+        best = np.argmax([np.dot(w,self.phi(s,a)) for a in range(self.nactions)])
+        if flip(epsilon):
+            return pr.choice(self.actions)
+        else:
+            return best
 
     def evaluate_policy(self, w):
         policy = functools.partial(self.linear_policy, w)

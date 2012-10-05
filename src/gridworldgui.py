@@ -266,16 +266,16 @@ def gridworld_gui_factory(baseclass):
 
             return (previous, a, reward, current)
 
-        def trace(self, tlen = 1000, policy = None, obs = False, show = True):
+        def trace(self, tlen = 1000, policy = None, obs = False, show = True, additional_endstates = None, reset_on_cycle = False):
             
             t = None
             if not show:
                 pval = self.updategui
                 self.updategui = False
-                t = super(GridworldGui,self).trace( tlen = tlen, policy = policy, obs = obs)
+                t = super(GridworldGui,self).trace( tlen = tlen, policy = policy, obs = obs, additional_endstates = additional_endstates, reset_on_cycle = reset_on_cycle)
                 self.updategui = pval
             else:
-                t = super(GridworldGui,self).trace( tlen = tlen, policy = policy, obs = obs)
+                t = super(GridworldGui,self).trace( tlen = tlen, policy = policy, obs = obs, additional_endstates = additional_endstates, reset_on_cycle = reset_on_cycle)
                 
             return t
 

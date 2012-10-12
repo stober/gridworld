@@ -464,7 +464,7 @@ class MDP( Features ):
 
         return trace
 
-    def trace(self, tlen = 1000, policy=None, obs = False, additional_endstates = None, reset_on_cycle=False):
+    def trace(self, tlen = 1000, policy=None, obs = False, additional_endstates = None, reset_on_cycle = False, reset_on_endstate = False, stop_on_cycle = False):
         # generate a trace using whatever policy is currently implemented
 
         if policy is None: policy = self.random_policy
@@ -487,12 +487,15 @@ class MDP( Features ):
             next_action = policy(observe(self.current))
             trace.append((pstate, paction, reward, state, next_action))
 
-            if self.current in endstates:
+            if reset_on_endstate and self.current in endstates:
                 self.reset()
 
-            if reset_on_cycle and (pstate, paction, reward, state, next_action) in trace:
+            if reset_on_cycle and (pstate, paction, reward, state, next_action) in trace[:-1]:
                 self.reset()
 
+            if stop_on_cycle and (pstate, paction, reward, state, next_action) in trace[:-1]:
+                break
+                
         return trace
 
 class FastMDP(MDP):

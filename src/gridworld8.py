@@ -290,11 +290,50 @@ class Gridworld8( MDP ):
             else:
                 return 0.0
 
+
+class ObserverGridworld(SparseGridworld8):
+    """
+    A gridworld overlayed with some pregenerated observations. 
+    """
+
+    def __init__(self, observations, coordinates, walls = None, endstates = None):
+        self.observations = np.load(observations) # KxL matrix of observations
+        self.coordinates = np.load(coordinates) # Nx2 matrix of coordinates that can be mapped to a gridworld
+
+        # determine the indices for everything in self.coordinates
+        xcoords = set(self.coordinates[:,0])
+        ycoords = set(self.coordinates[:,1])
+
+        # need to make sure ordering of coordinates is correct?
+        nrows = len(xcoords)
+        ncols = len(ycoords)
+
+        # For gw state indices (and dynamics) to match to provided data, the
+        # order of the coordinates needs to also match. That means the data is
+        # in row major order. The following sorting insures that this is true.
+
+        ind = np.lexsort((self.coordinates[:,1], self.coordinates[:,0]))
+        self.observations = self.observations[ind]
+        self.coordinates = self.coordinates[ind]
+
+        if walls is None:
+            walls = []
+
+        if endstates is None:
+            endstates = [0]
+
+        super(ObserverGridworld, self).__init__(nrows=nrows, ncols = ncols, endstates = endstates, walls = walls)
+
+    def observe(self,s):
+        return self.observations[s]
+
 if __name__ == '__main__':
 
     # gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
     # gws = SparseGridworld8(nrows = 32, ncols = 64)
     # bad = Gridworld8(nrows = 32, ncols=64) # will blowup memory
     # t = gws.trace(1000)
-    gw = SparseRBFGridworld8(nrows = 32, ncols = 32)
-    t = gw.trace(1000)
+    # gw = SparseRBFGridworld8(nrows = 32, ncols = 32)
+    # t = gw.trace(1000)
+
+    ogw = ObserverGridworld("/Users/stober/wrk/lspi/bin/observations.npy", "/Users/stober/wrk/lspi/bin/states.npy")

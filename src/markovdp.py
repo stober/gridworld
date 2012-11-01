@@ -344,7 +344,7 @@ class MDP( Features ):
         policy = functools.partial(self.linear_policy, w)
         traces = []
         for s in self.startindices:
-            traces.append(self.single_trace(s,policy))
+            traces.append(self.single_episode(policy,start=s))
 
         # need to evaluate traces
         return traces
@@ -445,8 +445,12 @@ class MDP( Features ):
     def identity(self, arg):
         return arg
 
-    def single_episode(self, policy = None, obs = False):
-        self.reset()
+    def single_episode(self, policy = None, obs = False, tlimit=1000, start=None):
+        if start:
+            self.current = start
+        else:
+            self.reset()
+
         if policy is None: policy = self.random_policy
 
         if obs:
@@ -457,7 +461,8 @@ class MDP( Features ):
         trace = []
         # initialize the actions
         next_action = policy(observe(self.current))
-        while not self.current in self.endstates:
+
+        while not self.current in self.endstates and len(trace) < tlimit:
             pstate, paction, reward, state = self.move(next_action, obs=obs)
             next_action = policy(observe(self.current)) # next state
             trace.append((pstate, paction, reward, state, next_action))

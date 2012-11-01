@@ -34,6 +34,20 @@ def wall_pattern(nrows,ncols,endstate=0,pattern="comb"):
 
     return walls
 
+class ObserverFeatures( Features ):
+
+    def nfeatures(self):
+        return len(self.observations[0]) * self.nactions + 1
+
+    def phi(self, s, a, sparse=False, format="csr"):
+        """ sparse not implemented """
+        features = np.zeros(self.nfeatures())
+        obs = self.observe(s)
+        features[a * len(obs) : a*len(obs) + len(obs)] = obs
+        features[-1] = 1.0
+        return features
+
+
 class RBFFeatures( Features ):
 
     def __init__(self, nrows, ncols, nactions, nrbf):
@@ -291,7 +305,7 @@ class Gridworld8( MDP ):
                 return 0.0
 
 
-class ObserverGridworld(SparseGridworld8):
+class ObserverGridworld(SparseGridworld8, ObserverFeatures):
     """
     A gridworld overlayed with some pregenerated observations. 
     """
@@ -337,3 +351,4 @@ if __name__ == '__main__':
     # t = gw.trace(1000)
 
     ogw = ObserverGridworld("/Users/stober/wrk/lspi/bin/observations.npy", "/Users/stober/wrk/lspi/bin/states.npy")
+    print ogw.phi(0,0)

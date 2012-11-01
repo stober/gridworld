@@ -14,7 +14,7 @@ import pygame.locals as pgl
 
 import numpy as np
 import random as pr
-from gridworld8 import SparseRBFGridworld8,SparseGridworld8
+from gridworld8 import SparseRBFGridworld8,SparseGridworld8,ObserverGridworld
 from gridworld8 import wall_pattern
 
 def gridworld_gui_factory(baseclass):     
@@ -343,6 +343,7 @@ def gridworld_gui_factory(baseclass):
 # Here we use the factory to construct our desired subclasses using different Gridworld base classes.
 GridworldGui = gridworld_gui_factory(SparseGridworld8)
 RBFGridworldGui = gridworld_gui_factory(SparseRBFGridworld8)
+ObserverGridworldGui = gridworld_gui_factory(ObserverGridworld)
 
 if __name__ == '__main__':
 

@@ -47,6 +47,52 @@ class ObserverFeatures( Features ):
         features[-1] = 1.0
         return features
 
+class DiscreteObserverFeatures( Features ):
+
+    def __init__(self, nbuckets = 100, nobs = 10):
+        self.obs = self.observations
+        self.nbuckets = nbuckets
+        self.nobs = nobs # only tile first 5 buckets
+
+        self.bins = []
+        for i in range(nobs):
+            minval = np.min(self.obs[:,i])
+            maxval = np.max(self.obs[:,i])
+            dist = maxval - minval
+            interval = float(dist) / float(nbuckets)
+            bins = np.arange(minval + interval, maxval, interval)
+            self.bins.append(bins)
+
+    def tile(self, s, a):
+        obs = self.obs[s]
+        idx = []
+
+        for (i,bins) in enumerate(self.bins):
+            binx = i * self.nbuckets
+            offset = a  *  (self.nbuckets * self.nobs) +  binx
+            idx.append(np.searchsorted(bins, obs[i]) + offset)
+
+        return idx
+
+    def nfeatures(self):
+        return self.nbuckets * self.nobs * self.nactions + 1
+
+    def phi(self, s, a, sparse=False, format="csr"):
+        obs = self.observe(s) # 100 pca weights
+
+        if not sparse:
+            features = np.zeros(self.nfeatures())
+            features[-1] = 1.0
+            indx = self.tile(s,a)
+            features[indx] = 1.0
+            return features
+        else:
+            cols = np.array([0] * self.nobs + [0])
+            rows = np.array(self.tile(s,a) + [self.nfeatures()  - 1])
+            data = np.array([1.0] * self.nobs + [1.0])
+            sparse_features = sp_create_data(data, rows, cols, self.nfeatures(),1,format)
+            return sparse_features
+
 
 class RBFFeatures( Features ):
 
@@ -305,7 +351,7 @@ class Gridworld8( MDP ):
                 return 0.0
 
 
-class ObserverGridworld(SparseGridworld8, ObserverFeatures):
+class ObserverGridworld(SparseGridworld8, DiscreteObserverFeatures):
     """
     A gridworld overlayed with some pregenerated observations. 
     """
@@ -337,6 +383,7 @@ class ObserverGridworld(SparseGridworld8, ObserverFeatures):
             endstates = [0]
 
         super(ObserverGridworld, self).__init__(nrows=nrows, ncols = ncols, endstates = endstates, walls = walls)
+        DiscreteObserverFeatures.__init__(self)
 
     def observe(self,s):
         return self.observations[s]
@@ -350,5 +397,17 @@ if __name__ == '__main__':
     # gw = SparseRBFGridworld8(nrows = 32, ncols = 32)
     # t = gw.trace(1000)
 
-    ogw = ObserverGridworld("/Users/stober/wrk/lspi/bin/observations.npy", "/Users/stober/wrk/lspi/bin/states.npy")
-    print ogw.phi(0,0)
+    obs = np.load("/Users/stober/wrk/lspi/bin/projections.npy")
+    for (i,p) in enumerate(obs):
+        for (j,q) in enumerate(obs):
+            if i != j and np.allclose(p,q):
+                print i,j," match!"
+
+    # ogw = ObserverGridworld("/Users/stober/wrk/lspi/bin/observations4.npy", "/Users/stober/wrk/lspi/bin/states.npy")
+    # all_phi = [ogw.phi(s,a) for s in ogw.states for a in ogw.actions]
+    # for (i,p) in enumerate(all_phi):
+    #     for (j,q) in enumerate(all_phi):
+    #         if i != j and np.allclose(p,q):
+    #             print i,j," match!"
+
+

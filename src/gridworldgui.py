@@ -24,7 +24,8 @@ def gridworld_gui_factory(baseclass):
 
     class GridworldGui(baseclass):
 
-        def __init__(self, size=16, *args, **kwargs):
+        def __init__(self, *args, **kwargs):
+            size=16
             # initialize the base gridworld class (no gui)
             super(GridworldGui, self).__init__(*args, **kwargs)
             self.initialize_pygame(size=size)
@@ -112,6 +113,31 @@ def gridworld_gui_factory(baseclass):
             x,y = self.state2coord(state, center=False)
 
             self.surface.blit(txt, (y,x))
+
+        def normalize(self, minval, maxval, v):
+            n = float(v - minval) / float(maxval - minval)
+            #n = float(v + np.abs(minval)) / float(np.abs(minval) + float(np.abs(maxval)))
+            return 255 - int(n * 255.0)
+
+        def set_heatmap(self, m):
+            self.bg_rendered = False
+            maxval = np.max(m)
+            minval = np.min(m)
+            self.heatmap = []
+            for v in m:
+                color = (255,255,self.normalize(minval,maxval,v)) # uses blue for now
+                self.heatmap.append(color)
+
+        def draw_heatmap(self, surface):
+            """
+            self.heatmap needs to be set
+            """
+
+            for s in self.sindices:
+                x,y = self.state2coord(s)
+                color = self.heatmap[s]
+                coords = pygame.Rect(y,x,self.size,self.size)
+                pygame.draw.rect(surface, color, coords)
 
         def set_arrows(self, pi):
             self.bg_rendered = False # rerender background
@@ -226,6 +252,10 @@ def gridworld_gui_factory(baseclass):
 
                 if hasattr(self, 'arrows'):
                     self.draw_arrows(self.bg)
+
+                if hasattr(self, 'heatmap'):
+                    self.draw_heatmap(self.bg)
+
                 self.bg_rendered = True # don't render again unless flag is set
                 self.surface.blit(self.bg,(0,0))
                                   

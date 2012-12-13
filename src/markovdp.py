@@ -49,6 +49,30 @@ class Features( object ):
         features[-1] = 1.0
         return features
 
+class AliasFeatures(Features):
+    """
+    A feature class that also has a certain subset of states that are aliased (produce identical feature vectors).
+    """
+
+    def __init__(self, nstates, nactions, aliases):
+        super(AliasFeatures, self).__init__(nstates,nactions)
+        # aliases is a dictionary where the keys are canonical state names and values are sets of aliases states.
+        self.aliases = aliases 
+
+    def find_canonical(self, s):
+        for canonical, aliases in self.aliases.items():
+            if s in aliases:
+                return canonical
+        return s
+
+    def phi(self, s, a, sparse=False, format="csr"):
+        s = self.find_canonical(s)
+        return super(AliasFeatures,self).phi(s, a, sparse = sparse, format = format)
+
+    def vphi(self, s):
+        s = self.find_canonical(s)
+        return super(AliasFeatures,self).vphi(s)
+
 class PolyFeatures( Features ):
     """
     Polynomial feature representation.

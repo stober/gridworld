@@ -10,7 +10,7 @@ import os, sys, getopt, pdb, string
 import random as pr
 import numpy as np
 import numpy.linalg as la
-from markovdp import MDP,FastMDP,SparseMDP, Features
+from markovdp import MDP,FastMDP,SparseMDP, Features, AliasFeatures
 from utils import sp_create, sp_create_data
 
 def coords(nrows,ncols,s):
@@ -199,6 +199,11 @@ class SparseRBFGridworld8( SparseGridworld8, RBFFeatures ):
     def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0], nrbf = 15):
         SparseGridworld8.__init__(self, nrows=nrows, ncols=ncols, walls=walls, endstates=endstates)
         RBFFeatures.__init__(self, self.nrows, self.ncols, self.nactions, nrbf)
+
+class SparseAliasGridworld8( SparseGridworld8, AliasFeatures ):
+    def __init__(self, nrows = 5, ncols = 5, walls=[(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)], endstates = [0], aliases={}):
+        SparseGridworld8.__init__(self, nrows=nrows, ncols=ncols, walls=walls, endstates=endstates)
+        AliasFeatures.__init__(self, self.nstates, self.nactions, aliases)
 
 class FastGridworld8( FastMDP ):
 

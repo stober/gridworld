@@ -14,7 +14,7 @@ import pygame.locals as pgl
 
 import numpy as np
 import random as pr
-from gridworld8 import SparseRBFGridworld8,SparseGridworld8,ObserverGridworld
+from gridworld8 import SparseRBFGridworld8,SparseGridworld8,ObserverGridworld,SparseAliasGridworld8
 from gridworld8 import wall_pattern
 
 def gridworld_gui_factory(baseclass):     
@@ -127,6 +127,22 @@ def gridworld_gui_factory(baseclass):
             for v in m:
                 color = (255,255,self.normalize(minval,maxval,v)) # uses blue for now
                 self.heatmap.append(color)
+
+        def set_colormap(self, sc):
+            """
+            Recieves a dict of the form state -> color and colors the grid accordingly. 
+            """
+            self.bg_rendered = False
+            self.colormap = {}
+            for s,c in sc.items():
+                self.colormap[s] = c
+
+        def draw_colormap(self, surface):
+            for s in self.sindices:
+                x,y = self.state2coord(s)
+                color = self.colormap.get(s,(255,255,255))
+                coords = pygame.Rect(y,x,self.size,self.size)
+                pygame.draw.rect(surface, color, coords)
 
         def draw_heatmap(self, surface):
             """
@@ -256,6 +272,9 @@ def gridworld_gui_factory(baseclass):
                 if hasattr(self, 'heatmap'):
                     self.draw_heatmap(self.bg)
 
+                if hasattr(self, 'colormap'):
+                    self.draw_colormap(self.bg)
+
                 self.bg_rendered = True # don't render again unless flag is set
                 self.surface.blit(self.bg,(0,0))
                                   
@@ -374,6 +393,7 @@ def gridworld_gui_factory(baseclass):
 GridworldGui = gridworld_gui_factory(SparseGridworld8)
 RBFGridworldGui = gridworld_gui_factory(SparseRBFGridworld8)
 ObserverGridworldGui = gridworld_gui_factory(ObserverGridworld)
+AliasGridworldGui = gridworld_gui_factory(SparseAliasGridworld8)
 
 if __name__ == '__main__':
 

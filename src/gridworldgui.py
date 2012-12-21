@@ -14,7 +14,7 @@ import pygame.locals as pgl
 
 import numpy as np
 import random as pr
-from gridworld8 import SparseRBFGridworld8,SparseGridworld8,ObserverGridworld,SparseAliasGridworld8
+from gridworld8 import SparseRBFGridworld8,SparseGridworld8,ObserverGridworld,SparseAliasGridworld8,RBFObserverGridworld
 from gridworld8 import wall_pattern
 
 def gridworld_gui_factory(baseclass):     
@@ -394,6 +394,7 @@ GridworldGui = gridworld_gui_factory(SparseGridworld8)
 RBFGridworldGui = gridworld_gui_factory(SparseRBFGridworld8)
 ObserverGridworldGui = gridworld_gui_factory(ObserverGridworld)
 AliasGridworldGui = gridworld_gui_factory(SparseAliasGridworld8)
+RBFObserverGridworldGui = gridworld_gui_factory(RBFObserverGridworld)
 
 if __name__ == '__main__':
 

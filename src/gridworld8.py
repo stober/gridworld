@@ -47,12 +47,49 @@ class ObserverFeatures( Features ):
         features[-1] = 1.0
         return features
 
+class RBFObserverFeatures( Features ):
+
+    def __init__(self, nrbf):
+        self.nrbf = nrbf
+        self.feature_cnt = nrbf * self.nactions + 1
+        self.rbf_loc = pr.sample(self.observations, nrbf) # choose rbf centers
+        self.memory = {}
+
+    def nfeatures(self):
+        return self.feature_cnt
+
+    def rfunc(self, s):
+        """
+        Compute the responses. Override for different resposne functions.
+        """
+        c = np.array(self.observe(s))
+        key = tuple(c)
+        if self.memory.has_key(key):
+            return self.memory[key]
+        else:
+            r = [ np.exp(-.001 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ]
+            self.memory[key] = r
+            return r
+
+    def phi(self, s, a, sparse=False, format="csr"):
+        if sparse:
+            cols = np.array([0] * (self.nrbf + 1))
+            rows = np.array([a * self.nrbf + i for i in range(self.nrbf)] + [self.feature_cnt - 1])
+            data = np.array(self.rfunc(s) + [1.0])
+            sparse_features = sp_create_data(data,rows,cols,self.feature_cnt,1,format)
+            return sparse_features
+        else:
+            features = np.zeros(self.feature_cnt)
+            features[a * self.nrbf : a * self.nrbf + self.nrbf] = self.rfunc(s)
+            features[-1] = 1.0
+            return features    
+
 class DiscreteObserverFeatures( Features ):
 
-    def __init__(self, nbuckets = 100, nobs = 10):
-        self.obs = self.observations
+    def __init__(self, nbuckets = 100, nobs = 5):
+        self.obs = self.observations # TODO: why?
         self.nbuckets = nbuckets
-        self.nobs = nobs # only tile first 5 buckets
+        self.nobs = nobs # only tile first nobs buckets
 
         self.bins = []
         for i in range(nobs):
@@ -356,6 +393,7 @@ class Gridworld8( MDP ):
                 return 0.0
 
 
+
 class ObserverGridworld(SparseGridworld8, DiscreteObserverFeatures):
     """
     A gridworld overlayed with some pregenerated observations. 
@@ -393,6 +431,40 @@ class ObserverGridworld(SparseGridworld8, DiscreteObserverFeatures):
     def observe(self,s):
         return self.observations[s]
 
+class RBFObserverGridworld(SparseGridworld8, RBFObserverFeatures):
+    def __init__(self, observations, coordinates, walls = None, endstates = None, nrbf = 20):
+        self.observations = np.load(observations) # KxL matrix of observations
+        self.coordinates = np.load(coordinates) # Nx2 matrix of coordinates that can be mapped to a gridworld
+
+        # determine the indices for everything in self.coordinates
+        xcoords = set(self.coordinates[:,0])
+        ycoords = set(self.coordinates[:,1])
+
+        # need to make sure ordering of coordinates is correct?
+        nrows = len(xcoords)
+        ncols = len(ycoords)
+
+        # For gw state indices (and dynamics) to match to provided data, the
+        # order of the coordinates needs to also match. That means the data is
+        # in row major order. The following sorting insures that this is true.
+
+        ind = np.lexsort((self.coordinates[:,1], self.coordinates[:,0]))
+        self.observations = self.observations[ind]
+        self.coordinates = self.coordinates[ind]
+
+        if walls is None:
+            walls = []
+
+        if endstates is None:
+            endstates = [0]
+
+        super(RBFObserverGridworld, self).__init__(nrows=nrows, ncols = ncols, endstates = endstates, walls = walls)
+        RBFObserverFeatures.__init__(self, nrbf)
+
+    def observe(self,s):
+        return self.observations[s]
+
+
 if __name__ == '__main__':
 
     # gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
@@ -414,5 +486,3 @@ if __name__ == '__main__':
     #     for (j,q) in enumerate(all_phi):
     #         if i != j and np.allclose(p,q):
     #             print i,j," match!"
-
-

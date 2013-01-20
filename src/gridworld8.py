@@ -8,6 +8,7 @@ Description: A class for building gridworlds.
 
 import os, sys, getopt, pdb, string
 import random as pr
+import cPickle as pickle
 import numpy as np
 import numpy.linalg as la
 from markovdp import MDP,FastMDP,SparseMDP, Features, AliasFeatures
@@ -52,8 +53,20 @@ class RBFObserverFeatures( Features ):
     def __init__(self, nrbf):
         self.nrbf = nrbf
         self.feature_cnt = nrbf * self.nactions + 1
-        self.rbf_loc = pr.sample(self.observations, nrbf) # choose rbf centers
+        #self.rbf_loc = pr.sample(self.observations, nrbf) # choose rbf centers
+        self.rbf_loc = self.observations # rbf at every state
         self.memory = {}
+
+    def save_features(self,filename):
+        fp = open(filename,"w")
+        pickle.dump((self.nrbf, self.feature_cnt, self.rbf_loc), fp, pickle.HIGHEST_PROTOCOL)
+        fp.close()
+
+    def load_features(self, filename):
+        fp = open(filename)
+        self.memory = {}
+        self.nrbf, self.feature_cnt, self.rbf_loc = pickle.load(fp)
+        fp.close()
 
     def nfeatures(self):
         return self.feature_cnt
@@ -66,13 +79,13 @@ class RBFObserverFeatures( Features ):
         key = tuple(c)
         if self.memory.has_key(key):
             return self.memory[key]
-        else:
-            r = [ np.exp(-.001 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ]
+        else: #.0001 works best?
+            r = [ np.exp(-.1 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ]
             self.memory[key] = r
             return r
 
     def phi(self, s, a, sparse=False, format="csr"):
-        if sparse:
+        if sparse: # THIS IS BROKEN?
             cols = np.array([0] * (self.nrbf + 1))
             rows = np.array([a * self.nrbf + i for i in range(self.nrbf)] + [self.feature_cnt - 1])
             data = np.array(self.rfunc(s) + [1.0])
@@ -133,9 +146,10 @@ class DiscreteObserverFeatures( Features ):
 
 class RBFFeatures( Features ):
 
-    def __init__(self, nrows, ncols, nactions, nrbf):
-        self.nrows = nrows
-        self.ncols = ncols
+    def __init__(self, nactions, nrbf):
+        # nrows and ncols should already be defined outside mixin
+        assert hasattr(self,'ncols'), "ncols not defined"
+        assert hasattr(self,'nrows'), "nrows not defined"
         self.nrbf = nrbf
         self.feature_cnt = nrbf * nactions + 1
         self.rbf_loc = pr.sample([(i,j) for i in range(self.nrows) for j in range(self.ncols)], nrbf)
@@ -155,6 +169,7 @@ class RBFFeatures( Features ):
         """
         c = np.array(self.coords(s))
         return [ np.exp(-.001 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ]
+
 
     def phi(self, s, a, sparse=False, format="csr"):
         if sparse:
@@ -467,6 +482,24 @@ class RBFObserverGridworld(SparseGridworld8, RBFObserverFeatures):
 
 if __name__ == '__main__':
 
+    from tempfile import NamedTemporaryFile
+    outfile = NamedTemporaryFile()
+
+    coords = []
+    for i in range(16):
+        for j in range(32):
+            coords.append((i,j))
+    np.save(outfile, np.array(coords)) 
+    outfile.flush()
+
+    gw = RBFObserverGridworld(outfile.name,outfile.name)
+    print gw.rbf_loc
+    print len(gw.rbf_loc)
+    #gw.save_features("test.features")
+    gw.load_features("test.features")
+    print gw.rbf_loc
+    print len(gw.rbf_loc)
+
     # gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
     # gws = SparseGridworld8(nrows = 32, ncols = 64)
     # bad = Gridworld8(nrows = 32, ncols=64) # will blowup memory
@@ -474,11 +507,11 @@ if __name__ == '__main__':
     # gw = SparseRBFGridworld8(nrows = 32, ncols = 32)
     # t = gw.trace(1000)
 
-    obs = np.load("/Users/stober/wrk/lspi/bin/projections.npy")
-    for (i,p) in enumerate(obs):
-        for (j,q) in enumerate(obs):
-            if i != j and np.allclose(p,q):
-                print i,j," match!"
+    # obs = np.load("/Users/stober/wrk/lspi/bin/projections.npy")
+    # for (i,p) in enumerate(obs):
+    #     for (j,q) in enumerate(obs):
+    #         if i != j and np.allclose(p,q):
+    #             print i,j," match!"
 
     # ogw = ObserverGridworld("/Users/stober/wrk/lspi/bin/observations4.npy", "/Users/stober/wrk/lspi/bin/states.npy")
     # all_phi = [ogw.phi(s,a) for s in ogw.states for a in ogw.actions]

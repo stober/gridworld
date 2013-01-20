@@ -72,6 +72,10 @@ def gridworld_gui_factory(baseclass):
 
             return self.indx2coord(i, j, center)
 
+        def coord2state(self, coord):
+            i,j = self.coord2indx(coord[1],coord[0])
+            return self.rstates[(i,j)]
+
         def state2circle(self, state, bg = True, blit=True):
             if bg:
                 self.background()
@@ -358,11 +362,30 @@ def gridworld_gui_factory(baseclass):
                     elif event.type == pgl.KEYDOWN and event.key == pgl.K_RIGHT:
                         self.move(6)
 
+                    elif event.type == pgl.MOUSEBUTTONDOWN:
+                        state = self.coord2state(event.pos)
+                        obs = self.observe(state)
+                        print state,obs
+                        self.test_rbf(state)
+
                     else:
                         pass
 
                 self.screen.blit(self.surface,(0,0))
                 pygame.display.flip()
+
+        def test_rbf(self, s):
+            if not hasattr(self, 'rbf_loc'):
+                return
+            else:
+                #obs = self.observe(s)
+                r = self.rfunc(s)
+                print len(r)
+                # t = np.zeros(self.nstates)
+                # t[s] = 1.0
+                print r
+                self.set_heatmap(r)
+                self.background()
 
         def run_agent(self,w):
             """

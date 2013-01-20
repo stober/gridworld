@@ -493,6 +493,75 @@ class MDP( Features ):
 
         return trace
 
+    def complete_trace(self,policy=None,obs=False,mult=1):
+        """
+        Generate a trace with 'mult' of each possible transition.
+        """
+        trace = []
+
+        if policy is None: policy = self.random_policy
+
+        if obs:
+            observe = self.observe
+        else:
+            observe = self.identity
+
+        for s in self.states:
+            for a in self.actions:
+                for i in range(mult):
+                    self.current = s
+                    pstate, paction, reward, state = self.move(a)
+                    next_action = policy(observe(self.current))
+                    trace.append((pstate, paction, reward, state, next_action))
+                    
+        return trace
+            
+    def test(self, policy, obs = False):
+        if obs:
+            observe = self.observe
+        else:
+            observe = self.identity
+
+        result = {}
+        for s in range(self.nstates): #self.states does get all the states?
+            print s
+            self.current = s
+            trace = [s]
+            while True:
+                next_action = policy(observe(self.current))
+                self.move(next_action)
+
+                if result.has_key(self.current) and result[self.current]:
+                    # add additional trace states to the result set with postive outcome
+                    for i in trace:
+                        result[i] = 1
+                    break
+
+                elif result.has_key(self.current) and not result[self.current]:
+                    # add additional trace states to the result set with negative outcome
+                    for i in trace:
+                        result[i] = 0
+                    break
+
+                elif self.current in self.endstates:
+                    result[self.current] = 1
+                    for i in trace:
+                        result[i] = 1
+                    break
+
+                elif self.current in trace:
+                    # cycle detected and no endstate - fail
+                    result[self.current] = 0
+                    for i in trace:
+                        result[i] = 0
+                    break
+
+                else:
+                    trace.append(self.current)
+
+        return result
+
+
     def trace(self, tlen = 1000, policy=None, obs = False, additional_endstates = None, reset_on_cycle = False, reset_on_endstate = False, stop_on_cycle = False):
         # generate a trace using whatever policy is currently implemented
 

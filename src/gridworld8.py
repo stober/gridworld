@@ -51,8 +51,9 @@ class ObserverFeatures( Features ):
 class RBFObserverFeatures( Features ):
 
     def __init__(self, nrbf):
-        self.nrbf = nrbf
-        self.feature_cnt = nrbf * self.nactions + 1
+        # self.nrbf = nrbf
+        self.nrbf = len(self.observations)
+        self.feature_cnt = self.nrbf * self.nactions + 1
         #self.rbf_loc = pr.sample(self.observations, nrbf) # choose rbf centers
         self.rbf_loc = self.observations # rbf at every state
         self.memory = {}
@@ -71,6 +72,15 @@ class RBFObserverFeatures( Features ):
     def nfeatures(self):
         return self.feature_cnt
 
+    def get_sparsity(self):
+        """
+        Provide an estimate of the number of active features.
+        """
+        avg = 0
+        for v in pr.sample(self.memory.values(), 100):
+            avg += float(np.sum(v>0.0))
+        return avg / 100.0
+
     def rfunc(self, s):
         """
         Compute the responses. Override for different resposne functions.
@@ -80,12 +90,13 @@ class RBFObserverFeatures( Features ):
         if self.memory.has_key(key):
             return self.memory[key]
         else: #.0001 works best?
-            r = [ np.exp(-.1 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ]
+            r = np.array([ np.exp(-0.1 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ])
+            r[r<0.01] = 0.0 # enforce sparseness
             self.memory[key] = r
             return r
 
     def phi(self, s, a, sparse=False, format="csr"):
-        if sparse: # THIS IS BROKEN?
+        if sparse:
             cols = np.array([0] * (self.nrbf + 1))
             rows = np.array([a * self.nrbf + i for i in range(self.nrbf)] + [self.feature_cnt - 1])
             data = np.array(self.rfunc(s) + [1.0])

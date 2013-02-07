@@ -43,6 +43,9 @@ class Features( object ):
             features[-1] = 1.0
             return features
 
+    def get_sparsity(self):
+        return -1.0 # not implemented
+
     def vphi(self, s):
         features = np.zeros(self.nstates + 1)
         features[s] = 1.0

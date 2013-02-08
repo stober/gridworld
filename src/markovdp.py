@@ -338,6 +338,25 @@ class MDP( Features ):
     def observe(self, s):
         pass
 
+    def sample_move(self, s, a, obs=False):
+        # What might the next state after (s,a) be?
+        transition_distribution = self.model[a,s]
+
+        assert np.sum(transition_distribution) == 1.0, "a: %d, s: %d, p: %f" % (a, s, np.sum(transition_distribution))
+
+        choice = npr.multinomial(1,transition_distribution)
+        nonzero = np.nonzero(choice)[0]
+        assert len(nonzero) == 1
+        next = nonzero[0]
+
+        reward =  self.rewards[a,s,next]
+
+        if obs:
+            return (self.observe(s), a, reward, self.observe(next))
+        else:
+            return (s, a, reward, next)
+        
+
     def move(self, a, obs=False):
         self.previous = self.current
         transition_distribution = self.model[a,self.current]
@@ -366,6 +385,13 @@ class MDP( Features ):
             return pr.choice(self.actions)
         else:
             return best
+
+    def evaluate_func_policy(self,policy):
+        traces = []
+        for s in self.startindices:
+            traces.append(self.single_episode(policy,start=s))
+
+        return traces
 
     def evaluate_policy(self, w):
         policy = functools.partial(self.linear_policy, w)
@@ -701,6 +727,14 @@ class FastMDP(MDP):
                 fp.write("{0} {1} {2}\n".format(i, a, self.model[a,i]))
 
 
+    def sample_move(self, s, a, obs=False):
+        next = self.model[a,s]
+        reward = self.rewards[next]
+        if obs:
+            return (self.observe(s), a, reward, self.observe(next))
+        else:
+            return (s, a, reward, next)
+
     def move(self, a, obs=False):
         self.previous = self.current
 
@@ -749,13 +783,32 @@ class SparseMDP( MDP ):
 
         Features.__init__(self, self.nstates, self.nactions) # feature mixin supplies phi and related methods
 
+    def sample_move(self, s, a, obs=False):
+        distribution = self.model[a,s]
+        states = [x[0] for x in distribution]
+        probs = [x[1] for x in distribution]
+
+        assert np.sum(probs) == 1.0, "a: %d, s: %d, p: %f" % (a, s, np.sum(probs))
+        choice = npr.multinomial(1,probs)
+        nonzero = np.nonzero(choice)[0]
+        assert len(nonzero) == 1
+
+        next = states[nonzero[0]]
+        reward = self.rewards[next]
+        
+        if obs:
+            return (self.observe(s), a, reward, self.observe(next))
+        else:
+            return (s, a, reward, next)
+            
+
     def move(self, a, obs=False):
         self.previous = self.current
         distribution = self.model[a,self.current] # list of (state, prob) pairs
         states = [x[0] for x in distribution]
         probs = [x[1] for x in distribution]
 
-        assert np.sum(probs) == 1.0, "a: %d, s: %d, p: %f" % (a, self.current, np.sum(transition_distribution))
+        assert np.sum(probs) == 1.0, "a: %d, s: %d, p: %f" % (a, self.current, np.sum(probs))
         choice = npr.multinomial(1,probs)
         nonzero = np.nonzero(choice)[0]
         assert len(nonzero) == 1

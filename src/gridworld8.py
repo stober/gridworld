@@ -218,6 +218,37 @@ class SparseGridworld8( SparseMDP ):
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
 
+    def perfect_policy(self, s):
+        """
+        Move towards the closest end state optimally.
+        """
+        if s in self.endstates:
+            return 0
+
+        closest_endstate = -1
+        endstate_distance = 1e6
+        scoords = np.array(self.coords(s))
+
+        for e in self.endstates:
+            ecoords = np.array(self.coords(e))
+            distance = la.norm(ecoords - scoords)
+            if distance < endstate_distance:
+                closest_endstate = e
+                endstate_distance = distance
+
+        target = self.coords(closest_endstate)
+        min_action = -1
+        min_distance = endstate_distance
+
+        for a in self.actions:
+            next = self.sample_move(s,a)[-1]
+            ncoords = np.array(self.coords(next))
+            new_distance = la.norm(ncoords - target)
+            if new_distance < min_distance:
+                min_action = a
+                min_distance = new_distance
+
+        return min_action
 
     def is_state(self, s):
         return s in self.rstates

@@ -77,7 +77,4 @@ if __name__ == '__main__':
     t = v.trace(1000, reset_on_endstate = True)
     print t
 
-    # show reward transitions in the trace
-    for i in t:
-        if i[2] == 1.0:
-            print i
+    

@@ -24,7 +24,7 @@ def wall_pattern(nrows,ncols,endstate=0,pattern="comb"):
     walls = []
 
     if goal[1] % 2 == 0:
-        wmod = 1            
+        wmod = 1
     else:
         wmod = 0
 
@@ -99,14 +99,14 @@ class RBFObserverFeatures( Features ):
         if sparse:
             cols = np.array([0] * (self.nrbf + 1))
             rows = np.array([a * self.nrbf + i for i in range(self.nrbf)] + [self.feature_cnt - 1])
-            data = np.array(self.rfunc(s) + [1.0])
+            data = np.hstack([self.rfunc(s),[1.0]])
             sparse_features = sp_create_data(data,rows,cols,self.feature_cnt,1,format)
             return sparse_features
         else:
             features = np.zeros(self.feature_cnt)
             features[a * self.nrbf : a * self.nrbf + self.nrbf] = self.rfunc(s)
             features[-1] = 1.0
-            return features    
+            return features
 
 class DiscreteObserverFeatures( Features ):
 
@@ -453,7 +453,7 @@ class Gridworld8( MDP ):
 
 class ObserverGridworld(SparseGridworld8, DiscreteObserverFeatures):
     """
-    A gridworld overlayed with some pregenerated observations. 
+    A gridworld overlayed with some pregenerated observations.
     """
 
     def __init__(self, observations, coordinates, walls = None, endstates = None):
@@ -531,7 +531,7 @@ if __name__ == '__main__':
     for i in range(16):
         for j in range(32):
             coords.append((i,j))
-    np.save(outfile, np.array(coords)) 
+    np.save(outfile, np.array(coords))
     outfile.flush()
 
     gw = RBFObserverGridworld(outfile.name,outfile.name)

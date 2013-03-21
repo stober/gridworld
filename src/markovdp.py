@@ -25,12 +25,12 @@ class Features( object ):
         self.nstates = nstates
         self.nactions = nactions
         self.feature_cnt = nstates * nactions + 1
-        
+
     def nfeatures(self):
         return self.feature_cnt
 
     def phi(self, s, a, sparse=False, format="csr"):
-        
+
         if sparse:
             cols = np.array([0,0])
             rows = np.array([s + (a * self.nstates), self.feature_cnt - 1])
@@ -60,7 +60,7 @@ class AliasFeatures(Features):
     def __init__(self, nstates, nactions, aliases):
         super(AliasFeatures, self).__init__(nstates,nactions)
         # aliases is a dictionary where the keys are canonical state names and values are sets of aliases states.
-        self.aliases = aliases 
+        self.aliases = aliases
 
     def find_canonical(self, s):
         for canonical, aliases in self.aliases.items():
@@ -86,7 +86,7 @@ class PolyFeatures( Features ):
         self.nactions = nactions
         self.maxexp = maxexp
         self.feature_cnt = nstates * maxexp + 1
-        
+
     def phi(self, s, a):
         features = np.zeros(self.feature_cnt)
         for i in range(self.maxexp):
@@ -153,7 +153,7 @@ class HashFeatures( Features ):
         g = f % self.feature_cnt
         features[g] = 1.0
         return features
-    
+
 class MDP( Features ):
 
     def __init__(self, nstates = 32, nactions = 4):
@@ -217,7 +217,7 @@ class MDP( Features ):
                 for a in self.actions:
                     for t in self.sindices:
                         sums[a] += self.model[a,s,t] * (self.rewards[a,s,t] + self.gamma * values[t])
-                
+
                 values[s] = np.max(sums)
                 delta = max(delta, abs(v - values[s]))
             print i,delta
@@ -355,7 +355,6 @@ class MDP( Features ):
             return (self.observe(s), a, reward, self.observe(next))
         else:
             return (s, a, reward, next)
-        
 
     def move(self, a, obs=False):
         self.previous = self.current
@@ -542,9 +541,9 @@ class MDP( Features ):
                     pstate, paction, reward, state = self.move(a)
                     next_action = policy(observe(self.current))
                     trace.append((pstate, paction, reward, state, next_action))
-                    
+
         return trace
-            
+
     def test(self, policy, obs = False):
         if obs:
             observe = self.observe
@@ -553,7 +552,6 @@ class MDP( Features ):
 
         result = {}
         for s in range(self.nstates): #self.states does get all the states?
-            print s
             self.current = s
             trace = [s]
             while True:
@@ -622,7 +620,7 @@ class MDP( Features ):
 
             if stop_on_cycle and (pstate, paction, reward, state, next_action) in trace[:-1]:
                 break
-                
+
         return trace
 
 class FastMDP(MDP):
@@ -763,7 +761,7 @@ class SparseMDP( MDP ):
         self.actions = range(self.nactions)
         self.vcnts = np.zeros(self.nstates)
         self.gamma = 0.9
-        
+
         # possible start states for reset problems
         if not hasattr(self, 'startindices'):
             self.startindices = range(self.nstates)
@@ -795,12 +793,28 @@ class SparseMDP( MDP ):
 
         next = states[nonzero[0]]
         reward = self.rewards[next]
-        
+
         if obs:
             return (self.observe(s), a, reward, self.observe(next))
         else:
             return (s, a, reward, next)
-            
+
+    def neighbors(self, actions = None):
+        """
+        Return a matrix of size S x S where entry s_ij is 1 if there is an action that takes the agent from state i to state j with nonzero probability.
+        """
+        if actions is None:
+            actions = self.actions
+
+        matrix = np.zeros((self.nstates, self.nstates))
+        for s in self.states:
+            for a in actions:
+                distribution = self.model[a, s]
+                for (t, p) in distribution:
+                    print t
+                    if p > 0.0 and s != t:
+                        matrix[s, t] = 1.0
+        return matrix
 
     def move(self, a, obs=False):
         self.previous = self.current

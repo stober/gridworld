@@ -119,7 +119,10 @@ def gridworld_gui_factory(baseclass):
             self.surface.blit(txt, (y,x))
 
         def normalize(self, minval, maxval, v):
-            n = float(v - minval) / float(maxval - minval)
+            if float(maxval - minval) != 0:
+                n = float(v - minval) / float(maxval - minval)
+            else:
+                n = 0
             #n = float(v + np.abs(minval)) / float(np.abs(minval) + float(np.abs(maxval)))
             return 255 - int(n * 255.0)
 

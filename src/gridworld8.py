@@ -256,6 +256,9 @@ class SparseGridworld8( SparseMDP ):
     def state_index(self, s):
         return self.rstates[s]
 
+    def coords_array(self):
+        return np.array(self.states.values())
+
     def coords(self, s):
         return (s / self.ncols, s % self.ncols)
 

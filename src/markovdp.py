@@ -538,7 +538,7 @@ class MDP( Features ):
             for a in self.actions:
                 for i in range(mult):
                     self.current = s
-                    pstate, paction, reward, state = self.move(a)
+                    pstate, paction, reward, state = self.move(a, obs=obs)
                     next_action = policy(observe(self.current))
                     trace.append((pstate, paction, reward, state, next_action))
 

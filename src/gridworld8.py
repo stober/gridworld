@@ -11,8 +11,10 @@ import random as pr
 import cPickle as pickle
 import numpy as np
 import numpy.linalg as la
+import pdb
 from markovdp import MDP,FastMDP,SparseMDP, Features, AliasFeatures
 from utils import sp_create, sp_create_data
+
 
 def coords(nrows,ncols,s):
     return (s / ncols, s % ncols)
@@ -524,26 +526,121 @@ class RBFObserverGridworld(SparseGridworld8, RBFObserverFeatures):
     def observe(self,s):
         return self.observations[s]
 
+class MultiTargetGridworld(SparseMDP):
+    
+    def __init__(self, nrows=5, ncols=5):
+        self.nrows = nrows
+        self.ncols = ncols
+        grid = [self.coords(i) for i in range(self.nrows * self.ncols)]
+        grid = [(s,t) for s in grid for t in grid]
+        self.states = dict([(i,s) for (i,s) in enumerate(grid)])
+        self.rstates = dict([(s,i) for (i,s) in enumerate(grid)])
+        self.nstates = len(self.states)
+        self.current = 0
+        self.nactions = 8
+        self.endstates = []
+        for (s,t) in self.rstates:
+            if s[0] == t[0] and s[1] == t[1]:
+                self.endstates.append(self.rstates[(s,t)])
+
+        SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+
+    def is_state(self, s):
+        return s in self.rstates
+
+    def state_index(self, s):
+        return self.rstates[s]
+
+    def coords_array(self):
+        return np.array(self.states.values())
+
+    def coords(self, s):
+        return (s / self.ncols, s % self.ncols)
+
+    def observe(self, s):
+        return self.states[s]
+
+    def dcoords(self, a):
+        # turn action index into an action A st. CS + A = NS
+        actions = [np.array((-1,0)),np.array((-1,-1)),
+                   np.array((0,-1)),np.array((1,-1)),
+                   np.array((1,0)), np.array((1,1)),
+                   np.array((0,1)), np.array((-1,1))]
+
+        return actions[a]
+
+    def initialize_rewards(self):
+        r = np.zeros(self.nstates)
+        for (s,t) in self.rstates:
+            if s[0] == t[0] and s[1] == t[1]:
+                r[self.rstates[(s,t)]] = 1.0
+        return r
+
+    def nfeatures(self):
+        return 4 * self.nactions + 1
+
+    def phi(self, s, a, sparse=False, format="rawdict"):
+        
+        if sparse:
+            if format != "rawdict":
+                raise ValueError("Format {0} not implemented yet!".format(format))
+            obs = self.states[s]  # (i,j) (s,t) tuple
+            result = {}
+            # features are the current coordinates and goal coordinates
+            # crossed with the action
+            offset = a * 4
+            for i,j in enumerate((obs[0][0] + 1, obs[0][1] + 1, obs[1][0] + 1, obs[1][1] + 1)):
+                result[offset + i] = float(j)
+
+            result[4 * self.nactions] = 1.0
+            return result
+        else:
+            result = np.zeros(self.nfeatures())
+            result[-1] = 1.0
+            offset = a * 4
+            obs = self.states[s]
+            for i,j in enumerate((obs[0][0] + 1, obs[0][1] + 1, obs[1][0] + 1, obs[1][1] + 1)):
+                result[offset + i] = float(j)
+            return result
+
+    def initialize_model(self, a, i):
+
+        cs,es = self.states[i]
+        ac = self.dcoords(a)
+        ns = cs + ac
+        ns = tuple(ns)
+
+        if self.is_state((ns,es)):
+            return [(self.state_index((ns,es)),1.0)]
+        else:
+            return [(i,1.0)]
+
+
 
 if __name__ == '__main__':
 
-    from tempfile import NamedTemporaryFile
-    outfile = NamedTemporaryFile()
+    gw =  MultiTargetGridworld()
+    # print gw.trace(100,obs=True)
+    # pdb.set_trace()
+    t = gw.complete_trace(obs=True)
+    print gw.phi(0,0)
+    # from tempfile import NamedTemporaryFile
+    # outfile = NamedTemporaryFile()
 
-    coords = []
-    for i in range(16):
-        for j in range(32):
-            coords.append((i,j))
-    np.save(outfile, np.array(coords))
-    outfile.flush()
+    # coords = []
+    # for i in range(16):
+    #     for j in range(32):
+    #         coords.append((i,j))
+    # np.save(outfile, np.array(coords))
+    # outfile.flush()
 
-    gw = RBFObserverGridworld(outfile.name,outfile.name)
-    print gw.rbf_loc
-    print len(gw.rbf_loc)
-    #gw.save_features("test.features")
-    gw.load_features("test.features")
-    print gw.rbf_loc
-    print len(gw.rbf_loc)
+    # gw = RBFObserverGridworld(outfile.name,outfile.name)
+    # print gw.rbf_loc
+    # print len(gw.rbf_loc)
+    # #gw.save_features("test.features")
+    # gw.load_features("test.features")
+    # print gw.rbf_loc
+    # print len(gw.rbf_loc)
 
     # gw = Gridworld8(walls = [(0,2),(1,2),(3,2),(4,2)])
     # gws = SparseGridworld8(nrows = 32, ncols = 64)

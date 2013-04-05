@@ -52,12 +52,15 @@ class ObserverFeatures( Features ):
 
 class RBFObserverFeatures( Features ):
 
-    def __init__(self, nrbf):
-        # self.nrbf = nrbf
-        self.nrbf = len(self.observations)
+    def __init__(self, nrbf, a = -0.1, use_all=True):
+        self.nrbf = nrbf
+        self.a = a
+        if use_all:
+            self.nrbf = len(self.observations)  # hack
         self.feature_cnt = self.nrbf * self.nactions + 1
-        #self.rbf_loc = pr.sample(self.observations, nrbf) # choose rbf centers
-        self.rbf_loc = self.observations # rbf at every state
+        self.rbf_loc = pr.sample(self.observations, nrbf) # choose rbf centers
+        if use_all:
+            self.rbf_loc = self.observations # rbf at every state
         self.memory = {}
 
     def save_features(self,filename):
@@ -92,7 +95,7 @@ class RBFObserverFeatures( Features ):
         if self.memory.has_key(key):
             return self.memory[key]
         else: #.0001 works best?
-            r = np.array([ np.exp(-0.1 * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ])
+            r = np.array([ np.exp(self.a * la.norm(c - i, ord=np.inf) ** 2) for i in self.rbf_loc ])
             r[r<0.01] = 0.0 # enforce sparseness
             self.memory[key] = r
             return r
@@ -526,7 +529,7 @@ class RBFObserverGridworld(SparseGridworld8, RBFObserverFeatures):
     def observe(self,s):
         return self.observations[s]
 
-class MultiTargetGridworld(SparseMDP):
+class MultiTargetGridworld(SparseMDP, RBFObserverFeatures):
     
     def __init__(self, nrows=5, ncols=5):
         self.nrows = nrows
@@ -539,11 +542,13 @@ class MultiTargetGridworld(SparseMDP):
         self.current = 0
         self.nactions = 8
         self.endstates = []
+        self.observations = np.array([[o[0][0],o[0][1],o[1][0],o[1][0]] for o in self.rstates])
         for (s,t) in self.rstates:
             if s[0] == t[0] and s[1] == t[1]:
                 self.endstates.append(self.rstates[(s,t)])
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+        RBFObserverFeatures.__init__(self, nrbf=200, a=-1.0, use_all=False)
 
     def is_state(self, s):
         return s in self.rstates
@@ -558,7 +563,7 @@ class MultiTargetGridworld(SparseMDP):
         return (s / self.ncols, s % self.ncols)
 
     def observe(self, s):
-        return self.states[s]
+        return self.observations[s]
 
     def dcoords(self, a):
         # turn action index into an action A st. CS + A = NS
@@ -575,33 +580,6 @@ class MultiTargetGridworld(SparseMDP):
             if s[0] == t[0] and s[1] == t[1]:
                 r[self.rstates[(s,t)]] = 1.0
         return r
-
-    def nfeatures(self):
-        return 4 * self.nactions + 1
-
-    def phi(self, s, a, sparse=False, format="rawdict"):
-        
-        if sparse:
-            if format != "rawdict":
-                raise ValueError("Format {0} not implemented yet!".format(format))
-            obs = self.states[s]  # (i,j) (s,t) tuple
-            result = {}
-            # features are the current coordinates and goal coordinates
-            # crossed with the action
-            offset = a * 4
-            for i,j in enumerate((obs[0][0] + 1, obs[0][1] + 1, obs[1][0] + 1, obs[1][1] + 1)):
-                result[offset + i] = float(j)
-
-            result[4 * self.nactions] = 1.0
-            return result
-        else:
-            result = np.zeros(self.nfeatures())
-            result[-1] = 1.0
-            offset = a * 4
-            obs = self.states[s]
-            for i,j in enumerate((obs[0][0] + 1, obs[0][1] + 1, obs[1][0] + 1, obs[1][1] + 1)):
-                result[offset + i] = float(j)
-            return result
 
     def initialize_model(self, a, i):
 
@@ -622,7 +600,10 @@ if __name__ == '__main__':
     gw =  MultiTargetGridworld()
     # print gw.trace(100,obs=True)
     # pdb.set_trace()
-    t = gw.complete_trace(obs=True)
+    #t = gw.complete_trace(obs=True)
+    ###print gw.phi(0,0)
+    print gw.nstates
+    print gw.nfeatures()
     print gw.phi(0,0)
     # from tempfile import NamedTemporaryFile
     # outfile = NamedTemporaryFile()

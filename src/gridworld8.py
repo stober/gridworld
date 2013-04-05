@@ -529,7 +529,7 @@ class RBFObserverGridworld(SparseGridworld8, RBFObserverFeatures):
     def observe(self,s):
         return self.observations[s]
 
-class MultiTargetGridworld(SparseMDP, RBFObserverFeatures):
+class MultiTargetGridworld(SparseMDP):
     
     def __init__(self, nrows=5, ncols=5):
         self.nrows = nrows
@@ -548,7 +548,6 @@ class MultiTargetGridworld(SparseMDP, RBFObserverFeatures):
                 self.endstates.append(self.rstates[(s,t)])
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
-        RBFObserverFeatures.__init__(self, nrbf=200, a=-1.0, use_all=False)
 
     def is_state(self, s):
         return s in self.rstates

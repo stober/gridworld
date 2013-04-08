@@ -542,12 +542,82 @@ class MultiTargetGridworld(SparseMDP):
         self.current = 0
         self.nactions = 8
         self.endstates = []
-        self.observations = np.array([[o[0][0],o[0][1],o[1][0],o[1][0]] for o in self.rstates])
+
+        self.observations = []
+        for i in range(self.nstates):
+            o = self.states[i]
+            self.observations.append([o[0][0],o[0][1],o[1][0],o[1][1]])
+        self.observations = np.array(self.observations)
+
         for (s,t) in self.rstates:
             if s[0] == t[0] and s[1] == t[1]:
                 self.endstates.append(self.rstates[(s,t)])
 
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+
+    def perfect_policy(self, s):
+        if s in self.endstates:
+            return 0
+        
+        min_action = -1
+        min_distance = 1e6
+        for a in self.actions:
+            ns = self.sample_move(s,a)[-1]
+            k,l = self.states[ns]
+            new_distance = la.norm(np.array(k) - np.array(l))
+            if new_distance < min_distance:
+                min_action = a
+                min_distance = new_distance
+
+        return min_action
+
+    # try more compressed indicator type features (on for goal and current states for each action)
+
+    # def nfeatures(self):
+    #     return self.nrows * self.ncols * 2 * 8 + 1
+
+    # def phi(self, s, a, sparse=False, format="rawdict"):
+    #     if sparse:
+    #         sparse_features = {}
+    #         i,j,s,t = self.observe(s)
+    #         s1 = self.rcoords(i,j)
+    #         s2 = self.rcoords(s,t)
+    #         action_offset = self.nrows * self.ncols * 2 * a
+    #         sparse_features[action_offset + s1] = 1.0
+    #         sparse_features[action_offset + self.nrows * self.ncols + s2] = 1.0
+    #         sparse_features[self.nfeatures() - 1] = 1.0
+    #         return sparse_features
+    #     else:
+    #         features = np.zeros(self.nfeatures())
+    #         i,j,s,t = self.observe(s)
+    #         s1 = self.rcoords(i,j)
+    #         s2 = self.rcoords(s,t)
+    #         action_offset = self.nrows * self.ncols * 2 * a
+    #         features[action_offset + s1] = 1.0
+    #         features[action_offset + self.nrows * self.ncols + s2] = 1.0
+    #         features[self.nfeatures() - 1] = 1.0
+    #         return features
+
+    def nfeatures(self):
+        return 2 * 8 + 1
+
+    def phi(self, s, a, sparse=False, format="rawdict"):
+        if sparse:
+            sparse_features = {}
+            i,j,s,t = self.observe(s)
+            action_offset = 2 * a
+            sparse_features[action_offset] = i - s
+            sparse_features[action_offset] = j - t
+            sparse_features[self.nfeatures() - 1] = 1.0
+            return sparse_features
+        else:
+            features = np.zeros(self.nfeatures())
+            i,j,s,t = self.observe(s)
+            action_offset = 2 * a
+            features[action_offset] = i - s
+            features[action_offset] = j - t
+            features[self.nfeatures() - 1] = 1.0
+            return features
 
     def is_state(self, s):
         return s in self.rstates
@@ -560,6 +630,9 @@ class MultiTargetGridworld(SparseMDP):
 
     def coords(self, s):
         return (s / self.ncols, s % self.ncols)
+
+    def rcoords(self, i, j):
+        return i * self.ncols + j
 
     def observe(self, s):
         return self.observations[s]
@@ -597,13 +670,19 @@ class MultiTargetGridworld(SparseMDP):
 if __name__ == '__main__':
 
     gw =  MultiTargetGridworld()
+
+    t = gw.trace(1000, policy = gw.perfect_policy, reset_on_endstate=True)
+    
+
     # print gw.trace(100,obs=True)
     # pdb.set_trace()
     #t = gw.complete_trace(obs=True)
     ###print gw.phi(0,0)
-    print gw.nstates
-    print gw.nfeatures()
-    print gw.phi(0,0)
+    # print gw.nstates
+    # print gw.nfeatures()
+    # print gw.phi(0,0)
+    # print gw.phi(0,0,sparse=True)
+    # print gw.observations
     # from tempfile import NamedTemporaryFile
     # outfile = NamedTemporaryFile()
 

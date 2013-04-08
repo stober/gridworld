@@ -388,7 +388,7 @@ class MDP( Features ):
     def evaluate_func_policy(self,policy):
         traces = []
         for s in self.startindices:
-            traces.append(self.single_episode(policy,start=s))
+            traces.append(self.single_episode(policy,start=s,tlimit=25))
 
         return traces
 

@@ -607,7 +607,7 @@ class MultiTargetGridworld(SparseMDP):
             i,j,s,t = self.observe(s)
             action_offset = 2 * a
             sparse_features[action_offset] = i - s
-            sparse_features[action_offset] = j - t
+            sparse_features[action_offset+1] = j - t
             sparse_features[self.nfeatures() - 1] = 1.0
             return sparse_features
         else:
@@ -615,7 +615,7 @@ class MultiTargetGridworld(SparseMDP):
             i,j,s,t = self.observe(s)
             action_offset = 2 * a
             features[action_offset] = i - s
-            features[action_offset] = j - t
+            features[action_offset+1] = j - t
             features[self.nfeatures() - 1] = 1.0
             return features
 

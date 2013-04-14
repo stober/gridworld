@@ -23,15 +23,26 @@ class Vergence( SparseMDP ):
        
         self.size = 10
         self.goal_index = 0
-        self.states = [(x,y) for x in range(self.size) for y in range(self.size)] # x is the agent location, y is the goal location
+        self.state_names = [(x,y) for x in range(self.size) for y in range(self.size)] # x is the agent location, y is the goal location
+        self.states = range(len(self.state_names))
         self.actions = [0,1] # left or right
         self.nstates = self.size ** 2
         self.nactions = 2
         self.endstates = []
-        for (i,s) in enumerate(self.states):
+        for (i,s) in enumerate(self.state_names):
             if s[0] == s[1]:
                 self.endstates.append(i)
         SparseMDP.__init__(self, nstates = self.nstates, nactions = self.nactions)
+
+    def perfect_policy(self, s):
+        if s in self.endstates:
+            return 0
+        x,y = self.state_names[s]
+        if x < y:
+            return 0
+        else:
+            return 1
+            
 
     def initialize_rewards(self):
         r = np.zeros(self.size ** 2)
@@ -40,7 +51,7 @@ class Vergence( SparseMDP ):
         return r
 
     def initialize_model(self, a, i):
-        cs = self.states[i][0]
+        cs = self.state_names[i][0]
 
         if a:
             cs = cs - 1
@@ -52,13 +63,13 @@ class Vergence( SparseMDP ):
         if cs >= self.size:
             cs = self.size - 1
 
-        ns = (cs,self.states[i][1])
-        ni = self.states.index(ns)
+        ns = (cs,self.state_names[i][1])
+        ni = self.state_names.index(ns)
         
         return [(ni,1.0)]
 
     def is_state(self, s):
-        return s in self.states
+        return s in self.state_names
 
 if __name__ == '__main__':
 
